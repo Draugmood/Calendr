@@ -5,25 +5,25 @@ export default {
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
   theme: {
-    colors: {
-      bgCol: {
-        DEFAULT: '#242424',
-        light: '#ffffff',
-      },
-      txtCol: {
-        DEFAULT: 'rgba(255, 255, 255, 0.87)',
-        light: '#213547',
-      },
-      btnCol: {
-        DEFAULT: '#1a1a1a',
-        light: '#f9f9f9',
-      },
-      linkHoverCol: {
-        DEFAULT: '#ff5a5f',
-        light: '#ff5a5f',
-      },
-    },
     extend: {
+      colors: {
+        bgCol: {
+          DEFAULT: '#242424',
+          light: '#ffffff',
+        },
+        txtCol: {
+          DEFAULT: 'rgba(255, 255, 255, 0.87)',
+          light: '#213547',
+        },
+        btnCol: {
+          DEFAULT: '#1a1a1a',
+          light: '#f9f9f9',
+        },
+        linkHoverCol: {
+          DEFAULT: '#ff5a5f',
+          light: '#ff5a5f',
+        },
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
       },
