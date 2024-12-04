@@ -49,7 +49,7 @@ const eventsByDay = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-row w-full mx-auto">
+  <div class="relative flex flex-row w-full mx-auto">
     <!-- Timeline / margin -->
     <div class="w-12 flex flex-col items-end pr-2">
       <div class="h-16"></div>
@@ -67,19 +67,29 @@ const eventsByDay = computed(() => {
         </div>
       </div>
     </div>
-    
     <!-- Days / rest of calendar -->
     <div class="grid grid-cols-7 w-full gap-2">
       <Day
-        v-for="(date, index) in datesInWeek"
-        :key="index"
-        :date="date"
-        :dayIndex="index"
-        :day="daysOfWeek[index]"
-        :events="eventsByDay[date.toISOString().split('T')[0]]"
-        :hourHeight="hourHeight"
-        :gridStartHour="gridStartHour"
+      v-for="(date, index) in datesInWeek"
+      :key="index"
+      :date="date"
+      :dayIndex="index"
+      :day="daysOfWeek[index]"
+      :events="eventsByDay[date.toISOString().split('T')[0]]"
+      :hourHeight="hourHeight"
+      :gridStartHour="gridStartHour"
       />
+    </div>
+    <!-- Horizontal Hour Lines -->
+    <div
+      class="absolute -top-3 left-0 w-full h-full pointer-events-none"
+      :style="{ height: `${(gridEndHour - gridStartHour) * hourHeight}px` }">
+      <div
+        v-for="hour in gridEndHour - gridStartHour + 1"
+        :key="hour"
+        :style="{ top: `${((hour + 1) * hourHeight)}px` }"
+        class="absolute border-t border-gray-300 dark:border-gray-900 w-full">
+      </div>
     </div>
   </div>
 </template>

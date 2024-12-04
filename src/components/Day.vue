@@ -28,7 +28,7 @@ function calculateEventStyle(event) {
 
   return {
     top: `${topOffset}px`,
-    height: `${height}px`,
+    height: `${height-1}px`,
   };
 }
 
@@ -49,7 +49,7 @@ function calculateEventStyle(event) {
       <div
         v-for="event in events"
         :key="event.id"
-        class="absolute left-2 right-2 bg-blue-500 text-white text-xs rounded-lg shadow-lg px-2 py-1"
+        class="z-10 absolute left-2 right-2 bg-blue-500 text-white text-xs rounded-lg shadow-lg px-2 py-1"
         :style="calculateEventStyle(event)"
       >
         {{ event.summary }}
