@@ -37,10 +37,9 @@ async function fetchAccessToken(idToken: string) {
   }
 }
 
-// Fetch Google Calendar events using the access token
-async function fetchEvents(accessToken: string) {
+async function fetchCalendars(accessToken: string) {
   const response = await fetch(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+    'https://www.googleapis.com/calendar/v3/users/me/calendarList',
     {
       method: 'GET',
       headers: {
@@ -50,7 +49,50 @@ async function fetchEvents(accessToken: string) {
   );
 
   const data = await response.json();
-  events.value = data.items || [];
+  return data.items || [];
+}
+
+
+async function fetchEvents(accessToken: string) {
+  const now = new Date().toISOString(); // Get the current date and time in ISO format
+  const allEvents = [];
+
+  // Fetch all calendars
+  const calendars = await fetchCalendars(accessToken);
+
+  const params = new URLSearchParams({
+    timeMin: now,
+    orderBy: 'startTime',
+    singleEvents: 'true',
+    maxResults: '10', // doesnt seem to work?
+  });
+
+  const baseUrl = 'https://www.googleapis.com/calendar/v3/calendars';
+
+  for (const calendar of calendars) {
+    const url = `${baseUrl}/${encodeURIComponent(calendar.id)}/events?${params.toString()}`;
+    const response = await fetch(url,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (data.items) {
+      allEvents.push(...data.items);
+    }
+  }
+
+  allEvents.sort((a, b) => {
+    const dateA = new Date(a.start?.dateTime || a.start?.date);
+    const dateB = new Date(b.start?.dateTime || b.start?.date);
+    return dateA - dateB;
+  });
+
+  events.value = allEvents;
 }
 
 
@@ -117,7 +159,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg w-screen">
+  <div class="flex flex-col items-center bg-white dark:bg-gray-800 p-4 mt-8 rounded-lg shadow-lg w-full">
     <!-- Monthly view -->
     <div class="" v-if="viewMode === 'monthly'">
       <MonthHeader 
@@ -139,15 +181,9 @@ onMounted(() => {
 
       <!-- Display events after authentication -->
       <div v-if="isAuthenticated">
-        <h2>Upcoming Events</h2>
-        <ul>
-          <li v-for="event in events" :key="event.id">
-            {{ event.summary }} ({{ event.start.dateTime || event.start.date }})
-          </li>
-        </ul>
+        <WeekGrid :events="events" />
       </div>
 
-      <!-- <WeekGrid :weekIndex="currentWeekIndex" /> -->
     </div>
   </div>
 </template>
