@@ -11,7 +11,57 @@ import WeekHeader from './components/WeekHeader.vue'
 const CLIENT_ID = '456117121094-onppg75n7s8pj6dnifkueee0v0m3lqts.apps.googleusercontent.com';
 const isAuthenticated = ref(false);
 const events = ref([]);
+const trelloBaseUrl = 'https://api.trello.com/1';
+const trelloToken = 'teams'
+const trelloKey = 'teams'
+const todoList = ref<Checklist | null>(null);
 
+
+async function fetchTrelloChecklist(): Promise<void> {
+  const checklistId = '64ad489c7646ab7234ef0e21';
+  const url = `${trelloBaseUrl}/checklists/${checklistId}?key=${trelloKey}&token=${trelloToken}`;
+
+  try {
+    const response = await fetch(url, {
+        method: 'GET',
+      });
+  
+    const data: Checklist = await response.json();
+    todoList.value = data;
+
+  } catch (error) {
+    console.error('Error fetching todo list from Trello:', error);
+  }
+}
+
+function toggleItemState(index: number) {
+  // Toggle the state between 'complete' and 'incomplete'
+  const item = todoList.value?.checkItems[index];
+  if (item) {
+    const newState = item.state === 'complete' ? 'incomplete' : 'complete';
+    item.state = newState;
+
+    updateTrelloChecklistItem(item.id, newState);
+  }
+}
+
+async function updateTrelloChecklistItem(checkItemId: string, newState: 'complete' | 'incomplete'): Promise<void> {
+  const url = `${trelloBaseUrl}/cards/${todoList.value?.idCard}/checkItem/${checkItemId}?key=${trelloKey}&token=${trelloToken}&state=${newState}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update item state. Status: ${response.status}`);
+    }
+
+    console.log(`Successfully updated item ${checkItemId} to ${newState}`);
+  } catch (error) {
+    console.error('Error updating checklist item:', error);
+  }
+}
 
 async function fetchAccessToken(idToken: string) {
   const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -154,6 +204,7 @@ function getAccessTokenFromUrl() {
 
 onMounted(() => {
   getAccessTokenFromUrl();
+  fetchTrelloChecklist();
 });
 
 </script>
@@ -184,20 +235,35 @@ onMounted(() => {
         <WeekGrid :events="events" />
       </div>
 
+      <!-- Todo-list -->
+      <div v-if="todoList" class="flex flex-col mt-8 w-full items-center justify-center">
+        <div class="border border-gray-600 rounded-lg p-4">
+          <h2 class="text-2xl font-bold mb-4">{{ todoList.name }}</h2>
+          <ul class="w-full max-w-md">
+            <li
+              v-for="(item, index) in todoList.checkItems"
+              :key="item.id"
+              class="flex items-center justify-between mb-2 gap-x-8"
+            >
+              <label
+                :for="`item-${item.id}`"
+                :class="{'text-gray-500 line-through': item.state === 'complete'}"
+                class="text-lg cursor-pointer"
+              >
+                {{ item.name }}
+              </label>
+              <input
+                type="checkbox"
+                :id="`item-${item.id}`"
+                :checked="item.state === 'complete'"
+                @change="toggleItemState(index)"
+                class="h-5 w-5 min-w-5"
+              />
+            </li>
+          </ul>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
-
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-</style>

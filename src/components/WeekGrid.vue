@@ -82,10 +82,10 @@ const eventsByDay = computed(() => {
     </div>
     <!-- Horizontal Hour Lines -->
     <div
-      class="absolute -top-3 left-0 w-full h-full pointer-events-none"
+      class="absolute -top-3 -left-0.5 w-full h-full pointer-events-none"
       :style="{ height: `${(gridEndHour - gridStartHour) * hourHeight}px` }">
       <div
-        v-for="hour in gridEndHour - gridStartHour + 1"
+        v-for="hour in gridEndHour - gridStartHour"
         :key="hour"
         :style="{ top: `${((hour + 1) * hourHeight)}px` }"
         class="absolute border-t border-gray-300 dark:border-gray-900 w-full">
