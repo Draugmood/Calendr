@@ -1,21 +1,20 @@
 <script setup lang="ts">
 
-// Define props for day, dayIndex, and events
-const props = defineProps({
+const props = defineProps<{
   date: Date,
-  dayIndex: Number, // Index of the day (0-6 for Monday-Sunday)
-  day: String,      // Name of the day (e.g., 'Mandag')
-  events: Array,    // List of events for this day
-  hourHeight: Number,
-  gridStartHour: Number,
-});
+  dayIndex: number,
+  day: string,
+  events: CalendarEvent[],
+  hourHeight: number,
+  gridStartHour: number,
+}>();
 
 // Function to calculate event position
-function calculateEventStyle(event) {
+function calculateEventStyle(event: CalendarEvent) {
 
   // Parse the start and end times of the event
-  const startTime = new Date(event.start.dateTime || event.start.date);
-  const endTime = new Date(event.end.dateTime || event.end.date);
+  const startTime = new Date(event.start.dateTime ?? event.start.date ?? '');
+  const endTime = new Date(event.end.dateTime ?? event.end.date ?? '');
 
   // Calculate the start offset in hours relative to the grid's starting hour
   const startHour = startTime.getHours() + startTime.getMinutes() / 60;
@@ -54,9 +53,9 @@ function calculateEventStyle(event) {
       >
         {{ event.summary }}
         <br />
-        {{ new Date(event.start.dateTime || event.start.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+        {{ new Date(event.start.dateTime || event.start.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
         -
-        {{ new Date(event.end.dateTime || event.end.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+        {{ new Date(event.end.dateTime || event.end.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
       </div>
     </div>
   </div>

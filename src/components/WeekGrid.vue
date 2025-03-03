@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { computed, defineProps, ref, watchEffect } from 'vue';
+import { computed, ref, watchEffect } from 'vue';
 import Day from './Day.vue';
 
-const props = defineProps({
-  events: Array,
-})
+const props = defineProps<{
+  events: CalendarEvent[],
+}>()
+
+
+
+
+// 
+// ENDED UP KEEPING ALL THE CHANGES IN APP.VUE BUT NONE HERE
+// NEXT FIND OUT HOW TO GET THE EVENTS INTO THIS AND MAKE BUTTONS WORK
+// 
+
+
 
 // Timeline / vertical alignment
 const hourHeight = 60;
@@ -12,7 +22,7 @@ const gridStartHour = 6;
 const gridEndHour = 24;
 
 const daysOfWeek = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
-const datesInWeek = ref([]);
+const datesInWeek = ref<Date[]>([]);
 
 const updateWeekData = () => {
   const startDate = new Date();
@@ -30,14 +40,14 @@ watchEffect(() => {
 
 // Group events by day
 const eventsByDay = computed(() => {
-  const grouped = {};
+  const grouped: Record<string, CalendarEvent[]> = {};
   datesInWeek.value.forEach((date) => {
-    const dateKey = date.toISOString().split('T')[0]; // Get YYYY-MM-DD
+    const dateKey = (date as Date).toISOString().split('T')[0]; // Get YYYY-MM-DD
     grouped[dateKey] = []; // Initialize the day group
   });
 
-  props.events.forEach((event) => {
-    const startDate = new Date(event.start.dateTime || event.start.date);
+  props.events?.forEach((event) => {
+    const startDate = new Date(event.start?.dateTime ?? event.start.date ?? '');
     const dateKey = startDate.toISOString().split('T')[0];
     if (grouped[dateKey]) {
       grouped[dateKey].push(event);

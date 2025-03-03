@@ -2,10 +2,10 @@
 
 const emits = defineEmits(['update:month'])
 
-const props = defineProps({
-  monthIndex: Number,
-  months: Array,
-})
+const props = defineProps<{
+  monthIndex: number,
+  months: string[],
+}>()
 
 function changeMonth(increment: number) {
   const newMonthIndex = (props.monthIndex + increment + 12) % 12

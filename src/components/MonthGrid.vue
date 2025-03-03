@@ -1,13 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 
 defineProps<{ month: string }>()
-  const monthIndex = ref(new Date().getMonth()) // Starting with the current month
-
-  const updateMonth = (newMonthIndex) => {
-    monthIndex.value = newMonthIndex
-    // You might want to also update the daysInMonth and other related data here
-  }
+  
 </script>
 
 <template>
@@ -43,8 +37,8 @@ export default {
       // Assuming October starts on Monday and has 31 days
       daysOfWeek: ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'],
       daysInMonth: Array.from({ length: 31 }, (_, i) => i + 1),
-      startingEmptyCells: Array.from({ length: 0 }), // October starts on Monday, no empty cells needed
-      endingEmptyCells: Array.from({ length: 4 }) // Filler for the last row to complete the grid
+      startingEmptyCells: Array.from({ length: 0 }, (_, i) => i), // October starts on Monday, no empty cells needed
+      endingEmptyCells: Array.from({ length: 4 }, (_, i) => i) // Filler for the last row to complete the grid
     };
   },
 };

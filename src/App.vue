@@ -1,7 +1,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import HelloWorld from './components/HelloWorld.vue'
 import MonthGrid from './components/MonthGrid.vue'
 import MonthHeader from './components/MonthHeader.vue'
 import WeekGrid from './components/WeekGrid.vue'
@@ -10,7 +9,7 @@ import WeekHeader from './components/WeekHeader.vue'
 // Define constants for Google API
 const CLIENT_ID = '456117121094-onppg75n7s8pj6dnifkueee0v0m3lqts.apps.googleusercontent.com';
 const isAuthenticated = ref(false);
-const events = ref([]);
+const events = ref<CalendarEvent[]>([]);
 const trelloBaseUrl = 'https://api.trello.com/1';
 const trelloToken = 'teams'
 const trelloKey = 'teams'
@@ -63,29 +62,6 @@ async function updateTrelloChecklistItem(checkItemId: string, newState: 'complet
   }
 }
 
-async function fetchAccessToken(idToken: string) {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: CLIENT_ID,
-      client_secret: 'YOUR_CLIENT_SECRET', // Add your client secret here
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: idToken,
-    }),
-  });
-
-  const data = await response.json();
-  console.log('Access Token Response:', data);
-
-  const accessToken = data.access_token;
-  if (accessToken) {
-    isAuthenticated.value = true;
-    fetchEvents(accessToken);
-  }
-}
 
 async function fetchCalendars(accessToken: string) {
   const response = await fetch(
@@ -103,18 +79,23 @@ async function fetchCalendars(accessToken: string) {
 }
 
 
-async function fetchEvents(accessToken: string) {
-  const now = new Date().toISOString(); // Get the current date and time in ISO format
-  const allEvents = [];
+async function fetchEvents(accessToken: string, weekStartDate?: Date) {
 
-  // Fetch all calendars
+  const startOfWeek = weekStartDate || new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+  const allEvents = [];
   const calendars = await fetchCalendars(accessToken);
 
   const params = new URLSearchParams({
-    timeMin: now,
+    timeMin: startOfWeek.toISOString(),
+    timeMax: endOfWeek.toISOString(),
     orderBy: 'startTime',
     singleEvents: 'true',
-    maxResults: '10', // doesnt seem to work?
   });
 
   const baseUrl = 'https://www.googleapis.com/calendar/v3/calendars';
@@ -137,21 +118,15 @@ async function fetchEvents(accessToken: string) {
   }
 
   allEvents.sort((a, b) => {
-    const dateA = new Date(a.start?.dateTime || a.start?.date);
-    const dateB = new Date(b.start?.dateTime || b.start?.date);
+    const dateA = new Date(a.start?.dateTime || a.start?.date).getTime();
+    const dateB = new Date(b.start?.dateTime || b.start?.date).getTime();
     return dateA - dateB;
   });
 
+  console.log('Fetched events: ', allEvents);
   events.value = allEvents;
 }
 
-
-function handleCredentialResponse(response: { credential: string }) {
-  console.log('Encoded JWT ID token:', response.credential);
-  
-  // Use the ID token to fetch the access token
-  fetchAccessToken(response.credential);
-}
 
 function redirectToGoogleAuth() {
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -173,7 +148,7 @@ const viewMode = ref('weekly')
   
 const currentMonthIndex = ref(new Date().getMonth())
 
-const updateMonthIndex = (newIndex) => {
+const updateMonthIndex = (newIndex: number) => {
   currentMonthIndex.value = newIndex
 }
 
@@ -184,9 +159,9 @@ const getCurrentWeekIndex = (d = new Date()) => {
   // Make Sunday's day number 7
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
   // Get first day of year
-  var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)).getTime();
   // Calculate full weeks to nearest Thursday
-  var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+  var weekNo = Math.ceil(( ( (d.getTime() - yearStart) / 86400000) + 1)/7);
   // Return array of year and week number
   return weekNo;
 }
@@ -223,7 +198,7 @@ onMounted(() => {
     
     <!-- Weekly view -->
     <div class="w-full" v-if="viewMode === 'weekly'">
-      <WeekHeader />
+      <WeekHeader :weekIndex="currentWeekIndex" />
       
       <!-- Sign in button -->
       <button v-if="!isAuthenticated" @click="redirectToGoogleAuth">
@@ -232,12 +207,12 @@ onMounted(() => {
 
       <!-- Display events after authentication -->
       <div v-if="isAuthenticated">
-        <WeekGrid :events="events" />
+        <WeekGrid :events="events" :fetchEventsForWeek="fetchEvents" />
       </div>
 
       <!-- Todo-list -->
       <div v-if="todoList" class="flex flex-col mt-8 w-full items-center justify-center">
-        <div class="border border-gray-600 rounded-lg p-4">
+        <div class="border border-gray-600 rounded-lg p-4 max-h-80 w-full max-w-md overflow-y-auto">
           <h2 class="text-2xl font-bold mb-4">{{ todoList.name }}</h2>
           <ul class="w-full max-w-md">
             <li
