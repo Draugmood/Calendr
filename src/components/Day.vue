@@ -31,6 +31,26 @@ function calculateEventStyle(event: CalendarEvent) {
   };
 }
 
+function getEventColorClass(event: CalendarEvent) {
+  const colorMapping: Record<string, string> = {
+    '1': 'bg-green-100',
+    '2': 'bg-green-500',
+    '3': 'bg-fuchsia-600',
+    '4': 'bg-purple-500',
+    '5': 'bg-amber-400',
+    '6': 'bg-yellow-500',
+    '7': 'bg-blue-400',
+  };
+
+  // If colorId is present and matches a key, return that class.
+  // Otherwise, return a default color.
+  let color = event.colorId && colorMapping[event.colorId] ? colorMapping[event.colorId] : 'bg-lavender';
+  if (event.source === 'mortostr@gmail.com') {
+    color = 'bg-green-400';
+  }
+  return color
+}
+
 
 </script>
 
@@ -48,10 +68,11 @@ function calculateEventStyle(event: CalendarEvent) {
       <div
         v-for="event in events"
         :key="event.id"
-        class="z-10 absolute left-2 right-2 bg-blue-500 text-white text-xs rounded-lg shadow-lg px-2 py-1"
+        class="z-10 absolute left-2 right-2 text-black text-xs rounded-lg shadow-lg px-2 py-1"
+        :class="getEventColorClass(event)"
         :style="calculateEventStyle(event)"
       >
-        {{ event.summary }}
+        <strong class="truncate">{{ event.summary }}</strong>
         <br />
         {{ new Date(event.start.dateTime || event.start.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
         -

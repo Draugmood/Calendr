@@ -16,6 +16,10 @@ const trelloKey = 'teams'
 const todoList = ref<Checklist | null>(null);
 
 
+function toggleDarkMode(): void {
+  document.documentElement.classList.toggle('dark');
+}
+
 async function fetchTrelloChecklist(): Promise<void> {
   const checklistId = '64ad489c7646ab7234ef0e21';
   const url = `${trelloBaseUrl}/checklists/${checklistId}?key=${trelloKey}&token=${trelloToken}`;
@@ -113,6 +117,9 @@ async function fetchEvents(accessToken: string, weekStartDate?: Date) {
 
     const data = await response.json();
     if (data.items) {
+      data.items.forEach((event: CalendarEvent) => {
+        event.source = calendar.summary;
+      });
       allEvents.push(...data.items);
     }
   }
@@ -128,10 +135,12 @@ async function fetchEvents(accessToken: string, weekStartDate?: Date) {
 }
 
 
-function redirectToGoogleAuth() {
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+function redirectToGoogleAuth(): void {
+  const redirectUri: string = window.location.origin;
+  
+  const authUrl: string = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${CLIENT_ID}` +
-    `&redirect_uri=http://localhost:4000` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&response_type=token` +
     `&scope=https://www.googleapis.com/auth/calendar.readonly`;
 
@@ -198,7 +207,12 @@ onMounted(() => {
     
     <!-- Weekly view -->
     <div class="w-full" v-if="viewMode === 'weekly'">
-      <WeekHeader :weekIndex="currentWeekIndex" />
+      <div class="w-full relative">
+        <WeekHeader :weekIndex="currentWeekIndex" />
+        <button @click="toggleDarkMode" class="absolute top-0 right-4 p-2 rounded bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors">
+          🌙
+        </button>
+      </div>
       
       <!-- Sign in button -->
       <button v-if="!isAuthenticated" @click="redirectToGoogleAuth">

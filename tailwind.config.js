@@ -23,6 +23,9 @@ export default {
           DEFAULT: '#ff5a5f',
           light: '#ff5a5f',
         },
+        lavender: {
+          DEFAULT: '#9D9DCC',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
@@ -37,6 +40,6 @@ export default {
     },
   },
   plugins: [],
-  darkMode: 'media',
+  darkMode: 'class',
 }
 
