@@ -46,7 +46,7 @@ function getEventColorClass(event: CalendarEvent) {
   // Otherwise, return a default color.
   let color = event.colorId && colorMapping[event.colorId] ? colorMapping[event.colorId] : 'bg-lavender';
   if (event.source === 'mortostr@gmail.com') {
-    color = 'bg-green-400';
+    color = 'bg-blue-400';
   }
   return color
 }
@@ -68,15 +68,15 @@ function getEventColorClass(event: CalendarEvent) {
       <div
         v-for="event in events"
         :key="event.id"
-        class="z-10 absolute left-2 right-2 text-black text-xs rounded-lg shadow-lg px-2 py-1"
+        class="z-10 absolute left-2 right-2 text-black text-xs rounded-lg shadow-lg px-2 py-1 max-w-full"
         :class="getEventColorClass(event)"
         :style="calculateEventStyle(event)"
       >
-        <strong class="truncate">{{ event.summary }}</strong>
-        <br />
-        {{ new Date(event.start.dateTime || event.start.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+        <strong class="truncate block w-full whitespace-nowrap overflow-hidden text-ellipsis">{{ event.summary }}</strong>
+        
+        {{ new Date(event.start.dateTime || event.start.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) }}
         -
-        {{ new Date(event.end.dateTime || event.end.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+        {{ new Date(event.end.dateTime || event.end.date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) }}
       </div>
     </div>
   </div>

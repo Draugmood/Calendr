@@ -230,7 +230,7 @@ onMounted(() => {
           <h2 class="text-2xl font-bold mb-4">{{ todoList.name }}</h2>
           <ul class="w-full max-w-md">
             <li
-              v-for="(item, index) in todoList.checkItems"
+              v-for="(item, index) in [...todoList.checkItems].reverse()"
               :key="item.id"
               class="flex items-center justify-between mb-2 gap-x-8"
             >
