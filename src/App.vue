@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import MonthGrid from './components/MonthGrid.vue'
 import MonthHeader from './components/MonthHeader.vue'
 import WeekGrid from './components/WeekGrid.vue'
@@ -14,6 +14,19 @@ const trelloBaseUrl = 'https://api.trello.com/1';
 const trelloToken = 'teams'
 const trelloKey = 'teams'
 const todoList = ref<Checklist | null>(null);
+
+const sortedItems = computed(() => {
+  if (!todoList.value) return [];
+  const items = [...(todoList?.value?.checkItems ?? [])].reverse();
+  items.sort((a, b) => {
+    if (a.state === 'complete' && b.state === 'incomplete') return 1;
+    if (a.state === 'incomplete' && b.state === 'complete') return -1;
+    return 0;
+  })
+
+  return items;
+});
+
 
 
 function toggleDarkMode(): void {
@@ -37,9 +50,13 @@ async function fetchTrelloChecklist(): Promise<void> {
   }
 }
 
-function toggleItemState(index: number) {
+function toggleItemState(itemId: string) {
   // Toggle the state between 'complete' and 'incomplete'
-  const item = todoList.value?.checkItems[index];
+  const checkList = todoList.value;
+  if (!checkList) return;
+
+
+  const item = checkList.checkItems.find(item => item.id === itemId);
   if (item) {
     const newState = item.state === 'complete' ? 'incomplete' : 'complete';
     item.state = newState;
@@ -209,7 +226,7 @@ onMounted(() => {
     <div class="w-full" v-if="viewMode === 'weekly'">
       <div class="w-full relative">
         <WeekHeader :weekIndex="currentWeekIndex" />
-        <button @click="toggleDarkMode" class="absolute top-0 right-4 p-2 rounded bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors">
+        <button @click="toggleDarkMode" class="absolute top-0 right-4 p-2 w-10 h-10 rounded bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors">
           🌙
         </button>
       </div>
@@ -230,7 +247,7 @@ onMounted(() => {
           <h2 class="text-2xl font-bold mb-4">{{ todoList.name }}</h2>
           <ul class="w-full max-w-md">
             <li
-              v-for="(item, index) in [...todoList.checkItems].reverse()"
+              v-for="item in sortedItems"
               :key="item.id"
               class="flex items-center justify-between mb-2 gap-x-8"
             >
@@ -245,7 +262,7 @@ onMounted(() => {
                 type="checkbox"
                 :id="`item-${item.id}`"
                 :checked="item.state === 'complete'"
-                @change="toggleItemState(index)"
+                @change="toggleItemState(item.id)"
                 class="h-5 w-5 min-w-5"
               />
             </li>
