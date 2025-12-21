@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply m-0 bg-white text-slate-900 dark:bg-gray-900 dark:text-slate-100 flex justify-center;
+  }
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+}
