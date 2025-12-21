@@ -1,4 +1,4 @@
-interface Checklist {
+export interface Checklist {
     id: string;
     name: string;
     idBoard: string;
@@ -7,14 +7,14 @@ interface Checklist {
     checkItems: CheckItem[];
 }
 
-interface CheckItem {
+export interface CheckItem {
     id: string;
     name: string;
     nameData: {
         emoji: Record<string, any>
     };
     pos: number;
-    state: 'incomplete' | 'complete'
+    state: 'incomplete' | 'complete';
     due: string | null;
     dueReminder: string | null;
     idMember: string | null;

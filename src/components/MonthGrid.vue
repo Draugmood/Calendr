@@ -1,7 +1,11 @@
 <script setup lang="ts">
+// Define component props
+import { defineProps } from 'vue';
+interface Props {
+  month: string;
+}
+defineProps<Props>();
 
-defineProps<{ month: string }>()
-  
 </script>
 
 <template>
@@ -18,7 +22,9 @@ defineProps<{ month: string }>()
       <div class="text-center px-4 py-2" v-for="empty in startingEmptyCells" :key="empty"></div>
 
       <!-- Day Cells -->
-      <div class="border-b border-t border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-300 shadow-xl bg-gradient-to-r from-gray-700 to-gray-900" v-for="day in daysInMonth" :key="day">
+      <div
+        class="border-b border-t border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-300 shadow-xl bg-gradient-to-r from-gray-700 to-gray-900"
+        v-for="day in daysInMonth" :key="day">
         {{ day }}
       </div>
 

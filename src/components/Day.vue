@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import type { CalendarEvent } from '../calendarevent'
 
-const props = defineProps<{
-  date: Date,
-  dayIndex: number,
-  day: string,
-  events: CalendarEvent[],
-  hourHeight: number,
-  gridStartHour: number,
-}>();
+// Define component props
+interface Props {
+  date: Date;
+  dayIndex: number;
+  day: string;
+  events: CalendarEvent[];
+  hourHeight: number;
+  gridStartHour: number;
+}
+const props = defineProps<Props>();
 
 // Function to calculate event position
 function calculateEventStyle(event: CalendarEvent) {

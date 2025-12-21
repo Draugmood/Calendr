@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue';
+import type { CalendarEvent } from '../calendarevent';
+// Define component props
+interface Props {
+  events: CalendarEvent[];
+}
+const props = defineProps<Props>();
+
 import Day from './Day.vue';
-
-const props = defineProps<{
-  events: CalendarEvent[],
-}>()
-
-
-
-
-// 
-// ENDED UP KEEPING ALL THE CHANGES IN APP.VUE BUT NONE HERE
-// NEXT FIND OUT HOW TO GET THE EVENTS INTO THIS AND MAKE BUTTONS WORK
-// 
-
-
 
 // Timeline / vertical alignment
 const hourHeight = 60;
@@ -63,46 +56,27 @@ const eventsByDay = computed(() => {
     <!-- Timeline / margin -->
     <div class="w-12 flex flex-col items-end pr-2">
       <div class="h-16"></div>
-      <div
-        class="flex flex-col"
-        :style="{ height: `${(gridEndHour - gridStartHour) * hourHeight}px`}"
-      >
-        <div
-          v-for="hour in gridEndHour - gridStartHour"
-          :key="hour"
-          :style="{ height: `${hourHeight}px` }"
-          class="content-center pt-2"
-        >
+      <div class="flex flex-col" :style="{ height: `${(gridEndHour - gridStartHour) * hourHeight}px` }">
+        <div v-for="hour in gridEndHour - gridStartHour" :key="hour" :style="{ height: `${hourHeight}px` }"
+          class="content-center pt-2">
           {{ gridStartHour + hour + ":00" }}
         </div>
       </div>
     </div>
     <!-- Days / rest of calendar -->
     <div class="grid grid-cols-7 w-full gap-2">
-      <Day
-      v-for="(date, index) in datesInWeek"
-      :key="index"
-      :date="date"
-      :dayIndex="index"
-      :day="daysOfWeek[index]"
-      :events="eventsByDay[date.toISOString().split('T')[0]]"
-      :hourHeight="hourHeight"
-      :gridStartHour="gridStartHour"
-      />
+      <Day v-for="(date, index) in datesInWeek" :key="index" :date="date" :dayIndex="index" :day="daysOfWeek[index]"
+        :events="eventsByDay[date.toISOString().split('T')[0]]" :hourHeight="hourHeight"
+        :gridStartHour="gridStartHour" />
     </div>
     <!-- Horizontal Hour Lines -->
-    <div
-      class="absolute -top-3 -left-0.5 w-full h-full pointer-events-none"
+    <div class="absolute -top-3 -left-0.5 w-full h-full pointer-events-none"
       :style="{ height: `${(gridEndHour - gridStartHour) * hourHeight}px` }">
-      <div
-        v-for="hour in gridEndHour - gridStartHour"
-        :key="hour"
-        :style="{ top: `${((hour + 1) * hourHeight)}px` }"
+      <div v-for="hour in gridEndHour - gridStartHour" :key="hour" :style="{ top: `${((hour + 1) * hourHeight)}px` }"
         class="absolute border-t border-gray-300 dark:border-gray-900 w-full">
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
