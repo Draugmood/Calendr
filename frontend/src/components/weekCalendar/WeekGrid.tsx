@@ -1,4 +1,4 @@
-import { useDatesInWeek } from "@/hooks/useDatesInWeek";
+import { useWeek } from "@/contexts/WeekContext";
 import { useMemo } from "react";
 import Day from "../day/Day";
 import { useGoogleCalendarEvents } from "@/hooks/useGoogleCalendarEvents";
@@ -26,13 +26,10 @@ export default function WeekGrid({ accessToken }: Props) {
     "Søndag",
   ];
 
-  const { datesInWeek } = useDatesInWeek();
+  const { datesInWeek } = useWeek();
   const weekStartDate = datesInWeek[0];
-  const { events } = useGoogleCalendarEvents(
-    accessToken ?? null,
-    weekStartDate,
-  );
-  const eventsByDay = useEventsByDay(datesInWeek, events);
+  const useEvents = useGoogleCalendarEvents(accessToken ?? null, weekStartDate);
+  const eventsByDay = useEventsByDay(datesInWeek, useEvents.events);
 
   const hours = useMemo(
     () =>
@@ -42,6 +39,16 @@ export default function WeekGrid({ accessToken }: Props) {
       ),
     [],
   );
+
+  if (useEvents.isLoading || !useEvents.events) {
+    return (
+      <div className="flex justify-center items-center h-64 w-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-l-2">
+          ?
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex flex-row w-full mx-auto">

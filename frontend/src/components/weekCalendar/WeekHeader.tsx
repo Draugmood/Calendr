@@ -1,4 +1,4 @@
-import { useWeek } from "@/contexts/weekContext";
+import { useWeek } from "@/contexts/WeekContext";
 import { useWeekIndex } from "@/hooks/useWeekIndex";
 import { DateTime } from "luxon";
 import SecondaryButton from "../buttons/SecondaryButton";
@@ -8,7 +8,7 @@ export default function WeekHeader() {
   const weekNumber = useWeekIndex(anchorDate);
 
   return (
-    <div className="grid grid-cols-3 justify-center justify-items-center w-full my-4 px-12">
+    <div className="grid grid-cols-3 items-center justify-items-center w-full my-4 px-12">
       {weekNumber !== DateTime.now().weekNumber ? (
         <SecondaryButton label="I dag" onClick={goToToday} />
       ) : (

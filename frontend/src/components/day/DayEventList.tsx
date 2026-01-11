@@ -38,7 +38,7 @@ export default function DayEventList({ events }: Props) {
   const gridStartHour = CALENDAR_LAYOUT.gridStartHour;
 
   return (
-    <div className="relative h-full">
+    <div className="relative">
       {events.map((event) => {
         const startRaw = event.start?.dateTime || event.start?.date;
         const endRaw = event.end?.dateTime || event.end?.date;

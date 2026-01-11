@@ -4,7 +4,7 @@ import WeekHeader from "./WeekHeader";
 import { useGoogleAuthRedirect } from "@/hooks/useGoogleAuthRedirect";
 import { useGoogleAccessTokenFromHash } from "@/hooks/useGoogleAccessTokenFromHash";
 import PrimaryButton from "../buttons/PrimaryButton";
-import { WeekProvider } from "@/contexts/weekContext";
+import { WeekProvider } from "@/contexts/WeekContext";
 
 export default function WeekCalendar() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();

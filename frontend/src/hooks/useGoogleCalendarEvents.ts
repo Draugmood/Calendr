@@ -1,31 +1,9 @@
 import type { CalendarEvent } from "@/types/calendarEvent";
 import type { GoogleCalendarListItem } from "@/types/googleCalendarListItem";
 import { DateTimeFunctions } from "@/utils/DateTimeFunctions";
+import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 import { DateTime } from "luxon";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit = {},
-  timeout = 10000,
-): Promise<Response> {
-  const controller = new AbortController();
-  const id = window.setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    window.clearTimeout(id);
-    return response;
-  } catch (error: any) {
-    window.clearTimeout(id);
-    throw new Error(
-      `Network request failed for ${url}: ${error?.message ?? error}`,
-    );
-  }
-}
 
 function eventStartDateTime(event: CalendarEvent): DateTime | null {
   const raw = event.start?.dateTime || event.start?.date;
