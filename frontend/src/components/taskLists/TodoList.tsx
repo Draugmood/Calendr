@@ -45,8 +45,6 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
     return <div className="p-4 text-gray-400">Loading checklist...</div>;
   }
 
-  console.log(qrCodeImage);
-
   return (
     <div className="mt-4">
       <div className="border border-gray-600 rounded-lg p-4 w-full max-w-md ">

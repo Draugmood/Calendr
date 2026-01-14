@@ -50,9 +50,9 @@ export function useGoogleCalendarEvents(
   }, [accessToken]);
 
   const fetchEventsForWeek = useCallback(
-    async (weekStartDate: DateTime) => {
+    async (weekStartDate: DateTime, isBackground: boolean = false) => {
       if (!accessToken) return;
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       setErrorMessage(null);
 
       try {
@@ -119,9 +119,13 @@ export function useGoogleCalendarEvents(
 
         setEvents(allEvents);
       } catch (error: any) {
-        setErrorMessage(error?.message ?? String(error));
+        if (!isBackground) {
+          setErrorMessage(error?.message ?? String(error));
+        } else {
+          console.warn("Google Calendar API: Background sync failed:", error);
+        }
       } finally {
-        setIsLoading(false);
+        if (!isBackground) setIsLoading(false);
       }
     },
     [accessToken, effectiveWeekStart, fetchCalendars],
@@ -129,7 +133,13 @@ export function useGoogleCalendarEvents(
 
   useEffect(() => {
     if (!accessToken) return;
-    fetchEventsForWeek(effectiveWeekStart);
+    fetchEventsForWeek(effectiveWeekStart, false);
+
+    const intervalId = setInterval(() => {
+      fetchEventsForWeek(effectiveWeekStart, true);
+    }, 15 * 1000);
+
+    return () => clearInterval(intervalId);
   }, [accessToken, effectiveWeekStart, fetchEventsForWeek]);
 
   return { events, errorMessage, isLoading, fetchEventsForWeek };

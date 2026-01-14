@@ -14,25 +14,33 @@ export function useTrelloChecklist(checklistId?: string) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchChecklist = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    try {
-      const response = await fetchWithTimeout(url);
-      if (!response.ok) {
-        throw new Error(
-          `Trello API request failed with status ${response.status}`,
-        );
-      }
-      const data = (await response.json()) as Checklist;
+  const fetchChecklist = useCallback(
+    async (isBackground = false) => {
+      if (!isBackground) setIsLoading(true);
+      setErrorMessage(null);
 
-      setChecklist(data);
-    } catch (error: any) {
-      setErrorMessage(error?.message ?? "Failed to fetch Trello checklist");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [url]);
+      try {
+        const response = await fetchWithTimeout(url);
+        if (!response.ok) {
+          throw new Error(
+            `Trello API request failed with status ${response.status}`,
+          );
+        }
+        const data = (await response.json()) as Checklist;
+
+        setChecklist(data);
+      } catch (error: any) {
+        if (!isBackground) {
+          setErrorMessage(error?.message ?? "Failed to fetch Trello checklist");
+        } else {
+          console.warn("Background sync failed:", error);
+        }
+      } finally {
+        if (!isBackground) setIsLoading(false);
+      }
+    },
+    [url],
+  );
 
   const updateChecklistItem = useCallback(
     async (
@@ -61,14 +69,17 @@ export function useTrelloChecklist(checklistId?: string) {
       } catch (error: any) {
         console.error(error);
         setErrorMessage("Failed to update checklist item, reverting");
-        fetchChecklist();
+        fetchChecklist(false);
       }
     },
     [fetchChecklist],
   );
 
   useEffect(() => {
-    fetchChecklist();
+    fetchChecklist(false);
+
+    const intervalId = setInterval(() => fetchChecklist(true), 15 * 1000);
+    return () => clearInterval(intervalId);
   }, [fetchChecklist]);
 
   return {
