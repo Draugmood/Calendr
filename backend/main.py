@@ -1,10 +1,11 @@
+import os
 import sqlite3
 from datetime import datetime
 from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-
+from dotenv import load_dotenv
 
 app = FastAPI()
 
@@ -17,7 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_FILE = "calendr.db"
+load_dotenv(".env.development")
+
+DB_FILE = os.environ.get("CALENDR_DB_FILE", "/var/lib/calendr/calendr.db")
 
 
 def get_db():
