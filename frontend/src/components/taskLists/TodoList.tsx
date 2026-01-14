@@ -21,7 +21,8 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
       // Incomplete items come first (return -1), Complete items go to bottom (return 1)
       if (a.state === "complete" && b.state === "incomplete") return 1;
       if (a.state === "incomplete" && b.state === "complete") return -1;
-      return 0;
+
+      return a.pos - b.pos;
     });
 
     return items;

@@ -9,4 +9,5 @@ type ChecklistItem = {
   id: string;
   name: string;
   state: "complete" | "incomplete";
+  pos: number;
 };
