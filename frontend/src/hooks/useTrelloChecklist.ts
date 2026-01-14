@@ -3,12 +3,12 @@ import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 import { useCallback, useEffect, useState } from "react";
 
 const TRELLO_API_BASE = "https://api.trello.com/1";
-const CHECKLIST_ID = "64ad489c7646ab7234ef0e21";
+
 const TRELLO_KEY = import.meta.env.VITE_TRELLO_KEY as string;
 const TRELLO_TOKEN = import.meta.env.VITE_TRELLO_TOKEN as string;
 
-export function useTrelloChecklist() {
-  const url = `${TRELLO_API_BASE}/checklists/${CHECKLIST_ID}?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`;
+export function useTrelloChecklist(checklistId?: string) {
+  const url = `${TRELLO_API_BASE}/checklists/${checklistId}?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`;
 
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

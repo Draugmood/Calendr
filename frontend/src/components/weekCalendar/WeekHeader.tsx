@@ -17,7 +17,7 @@ export default function WeekHeader() {
       <div className="flex items-center gap-8">
         <SecondaryButton label="Forrige" onClick={goToPreviousWeek} />
 
-        <div className="text-4xl font-bold text-gray-800 dark:text-white">
+        <div className="text-4xl font-bold min-w-max text-gray-800 dark:text-white">
           Uke {weekNumber}
         </div>
 

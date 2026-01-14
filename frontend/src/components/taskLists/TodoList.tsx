@@ -1,9 +1,15 @@
 import { useTrelloChecklist } from "@/hooks/useTrelloChecklist";
 import { useMemo } from "react";
+import QrCodeButton from "../buttons/QrCodeButton";
 
-export default function TodoList() {
-  const { checklist, errorMessage, isLoading, refetch, updateChecklistItem } =
-    useTrelloChecklist();
+interface Props {
+  checklistId?: string;
+  qrCodeImage?: string;
+}
+
+export default function TodoList({ checklistId, qrCodeImage }: Props) {
+  const { checklist, errorMessage, isLoading, updateChecklistItem } =
+    useTrelloChecklist(checklistId);
 
   const sortedItems = useMemo(() => {
     if (!checklist) return [];
@@ -39,10 +45,22 @@ export default function TodoList() {
     return <div className="p-4 text-gray-400">Loading checklist...</div>;
   }
 
+  console.log(qrCodeImage);
+
   return (
     <div className="mt-4">
       <div className="border border-gray-600 rounded-lg p-4 w-full max-w-md ">
-        <h2 className="text-2xl font-bold mb-4">{checklist?.name}</h2>
+        <div className="grid grid-cols-3 justify-items-stretch items-center mb-4">
+          <div />
+          <h2 className="text-2xl font-bold">{checklist?.name}</h2>
+          {qrCodeImage ? (
+            <div className="flex flex-row-reverse">
+              <QrCodeButton qrCodeImage={qrCodeImage} />
+            </div>
+          ) : (
+            <div>blæ</div>
+          )}
+        </div>
         <ul className="w-full max-w-md max-h-80 space-y-2 overflow-y-auto pr-4">
           {sortedItems.map((item) => (
             <li
@@ -65,7 +83,7 @@ export default function TodoList() {
               <label
                 htmlFor={`item-${item.id}`}
                 className={[
-                  "text-lg cursor-pointer select-none",
+                  "text-lg cursor-pointer select-none text-nowrap text-left overflow-hidden",
                   item.state === "complete"
                     ? "text-gray-500 line-through"
                     : "text-gray-900 dark:text-gray-100",

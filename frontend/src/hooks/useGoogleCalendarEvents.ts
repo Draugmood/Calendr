@@ -44,7 +44,9 @@ export function useGoogleCalendarEvents(
       );
     }
     const data = await response.json();
-    return (data.items ?? []) as GoogleCalendarListItem[];
+    const calendars = (data.items ?? []) as GoogleCalendarListItem[];
+
+    return calendars.filter((calendar) => !calendar.id.includes("weeknum"));
   }, [accessToken]);
 
   const fetchEventsForWeek = useCallback(

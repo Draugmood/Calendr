@@ -40,16 +40,6 @@ export default function WeekGrid({ accessToken }: Props) {
     [],
   );
 
-  if (useEvents.isLoading || !useEvents.events) {
-    return (
-      <div className="flex justify-center items-center h-64 w-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-l-2">
-          ?
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex flex-row w-full mx-auto">
       <div className="w-12 flex flex-col items-end pr-2 text-right">
@@ -69,7 +59,7 @@ export default function WeekGrid({ accessToken }: Props) {
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-7 w-full gap-2">
+      <div className="grid grid-cols-7 w-full gap-1">
         {datesInWeek.map((date, index) => {
           const key = DateTimeFunctions.toDateKey(date);
           const dayEvents = eventsByDay[key] ?? [];
@@ -80,6 +70,7 @@ export default function WeekGrid({ accessToken }: Props) {
               day={daysOfWeek[index]}
               date={date}
               dayEvents={dayEvents}
+              eventsLoading={useEvents.isLoading}
             />
           );
         })}

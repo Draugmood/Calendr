@@ -3,6 +3,6 @@ export interface CalendarEvent {
   summary: string;
   source?: string;
   colorId?: string;
-  start: { dateTime?: string; date?: string };
-  end: { dateTime?: string; date?: string };
+  start: { dateTime?: string; date?: string; timeZone?: string };
+  end: { dateTime?: string; date?: string; timeZone?: string };
 }
