@@ -18,11 +18,11 @@ export default function AllDayEvents({ events }: Props) {
       return;
     }
 
-    const interval = setInterval(() => {
+    const intervalId = setInterval(() => {
       setIndex((previous) => (previous + 1) % N);
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(intervalId);
   }, [events.length, N]);
 
   if (events.length === 0) {

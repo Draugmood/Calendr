@@ -2,14 +2,34 @@ import { useDarkMode } from "@/hooks/useDarkMode";
 import WeekGrid from "./WeekGrid";
 import WeekHeader from "./WeekHeader";
 import { useGoogleAuthRedirect } from "@/hooks/useGoogleAuthRedirect";
-import { useGoogleAccessTokenFromHash } from "@/hooks/useGoogleAccessTokenFromHash";
 import PrimaryButton from "../buttons/PrimaryButton";
 import { WeekProvider } from "@/contexts/WeekContext";
+import { useGoogleToken } from "@/hooks/useGoogleToken";
+import { useEffect } from "react";
+import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 
 export default function WeekCalendar() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { redirectToGoogleAuth } = useGoogleAuthRedirect();
-  const access_token = useGoogleAccessTokenFromHash();
+
+  const access_token = useGoogleToken();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      fetchWithTimeout("/api/auth/google/exchange", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      }).then((result) => {
+        if (result.ok) window.location.reload();
+        else console.error("Auth exchange failed:", result.statusText);
+      });
+    }
+  }, []);
 
   return (
     <WeekProvider>

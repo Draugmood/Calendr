@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import httpx
 from datetime import datetime
 from typing import Any
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,10 @@ app.add_middleware(
 load_dotenv(".env.development")
 
 DB_FILE = os.environ.get("CALENDR_DB_FILE", "/var/lib/calendr/calendr.db")
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.environ.get(
+    "GOOGLE_REDIRECT_URI", "http://localhost:5173")
 
 
 def get_db():
@@ -34,13 +39,18 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS system_kv (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS recurring_lists (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             cadence TEXT NOT NULL, -- 'daily', 'weekly'
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        
+
         CREATE TABLE IF NOT EXISTS recurring_list_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             list_id INTEGER NOT NULL,
@@ -48,7 +58,7 @@ def init_db():
             sort_order INTEGER DEFAULT 0,
             FOREIGN KEY(list_id) REFERENCES recurring_lists(id)
         );
-        
+
         CREATE TABLE IF NOT EXISTS recurring_instances (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             list_id INTEGER NOT NULL,
@@ -56,7 +66,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(list_id, period_key)
         );
-        
+
         CREATE TABLE IF NOT EXISTS recurring_instance_item_state (
             instance_id INTEGER NOT NULL,
             item_id INTEGER NOT NULL,
@@ -81,9 +91,10 @@ def init_db():
             ("Stand-up meeting", 2),
             ("Code review", 3)
         ]
-        cursor.executemany(
-            "INSERT INTO recurring_list_items (list_id, text, sort_order) VALUES (?, ?, ?)",
-            [(list_id, text, order) for text, order in items]
+        cursor.executemany("""
+            INSERT INTO recurring_list_items (list_id, text, sort_order)
+            VALUES (?, ?, ?)
+        """, [(list_id, text, order) for text, order in items]
         )
         conn.commit()
     conn.close()
@@ -164,16 +175,117 @@ def update_item_state(instance_id: int, item_id: int, update: ItemUpdate):
     completed_at = datetime.now() if update.completed else None
 
     cursor.execute("""
-        INSERT INTO recurring_instance_item_state (instance_id, item_id, completed, completed_at)
+        INSERT INTO recurring_instance_item_state (
+            instance_id, item_id, completed, completed_at
+        )
         VALUES (?, ?, ?, ?)
         ON CONFLICT(instance_id, item_id) DO UPDATE SET
             completed = excluded.completed,
             completed_at = excluded.completed_at
-    """, (instance_id, item_id, update.completed, completed_at))
+    """, (instance_id, item_id, update.completed, completed_at)
+    )
 
     conn.commit()
     conn.close()
     return {"success": True}
+
+
+@app.get("/api/auth/google/status")
+def get_google_auth_status():
+    """Check for stored refresh token"""
+    conn = get_db()
+    cursor = conn.cursor()
+    token = cursor.execute(
+        "SELECT value FROM system_kv WHERE key = 'google_refresh_token'"
+    ).fetchone()
+    conn.close()
+    return {"isAuthenticated": token is not None}
+
+
+@app.post("/api/auth/google/exchange")
+async def exchange_google_code(code_data: dict[str, str]):
+    """Exchange auth code for refresh token and store it"""
+    code = code_data.get("code")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": GOOGLE_REDIRECT_URI,
+            }
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=400, detail=f"Google Auth Failed: {response.text}"
+            )
+
+        data = response.json()
+        refresh_token = data.get("refresh_token")
+
+        if not refresh_token:
+            pass  # TODO?
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if refresh_token:
+            cursor.execute("""
+                INSERT INTO system_kv (key, value) VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """, ("google_refresh_token", refresh_token)
+            )
+
+        conn.commit()
+        conn.close()
+
+    return {"success": True}
+
+
+@app.get("/api/auth/google/token")
+async def get_google_access_token():
+    """Get access token using stored refresh token"""
+    conn = get_db()
+    cursor = conn.cursor()
+    token_row = cursor.execute(
+        "SELECT value FROM system_kv WHERE key = 'google_refresh_token'"
+    ).fetchone()
+    conn.close()
+
+    if not token_row:
+        raise HTTPException(
+            status_code=401,
+            detail="No refresh token found, could not authenticate"
+        )
+
+    refresh_token = token_row['value']
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            }
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Google Token Refresh Failed: {response.text}"
+            )
+
+        data = response.json()
+        return {
+            "access_token": data.get("access_token"),
+            "expires_in": data.get("expires_in"),
+        }
 
 
 if __name__ == "__main__":
