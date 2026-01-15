@@ -207,6 +207,8 @@ async def exchange_google_code(code_data: dict[str, str]):
     """Exchange auth code for refresh token and store it"""
     code = code_data.get("code")
 
+    redirect_uri = code_data.get("redirect_uri") or GOOGLE_REDIRECT_URI
+
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "https://oauth2.googleapis.com/token",
@@ -215,7 +217,7 @@ async def exchange_google_code(code_data: dict[str, str]):
                 "client_secret": GOOGLE_CLIENT_SECRET,
                 "code": code,
                 "grant_type": "authorization_code",
-                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "redirect_uri": redirect_uri,
             }
         )
 
