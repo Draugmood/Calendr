@@ -1,6 +1,7 @@
 import { useTrelloChecklist } from "@/hooks/useTrelloChecklist";
 import { useMemo } from "react";
 import QrCodeButton from "../buttons/QrCodeButton";
+import Checkbox from "../input/Checkbox";
 
 interface Props {
   checklistId?: string;
@@ -46,6 +47,8 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
     return <div className="p-4 text-gray-400">Loading checklist...</div>;
   }
 
+  // TODO align with resetmodal
+
   return (
     <div className="mt-4">
       <div className="border border-gray-600 rounded-lg p-4 w-full max-w-md ">
@@ -62,13 +65,8 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
         </div>
         <ul className="w-full max-w-md max-h-80 space-y-2 overflow-y-auto pr-4">
           {sortedItems.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center justify-left space-x-3"
-            >
-              <input
-                id={`item-${item.id}`}
-                type="checkbox"
+            <li key={item.id}>
+              <Checkbox
                 checked={item.state === "complete"}
                 onChange={() =>
                   updateChecklistItem(
@@ -77,19 +75,8 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
                     item.state === "complete" ? "incomplete" : "complete",
                   )
                 }
-                className="h-5 w-5 min-w-5 cursor-pointer accent-blue-500"
+                label={item.name}
               />
-              <label
-                htmlFor={`item-${item.id}`}
-                className={[
-                  "text-lg cursor-pointer select-none text-nowrap text-left overflow-hidden",
-                  item.state === "complete"
-                    ? "text-gray-500 line-through"
-                    : "text-gray-900 dark:text-gray-100",
-                ].join(" ")}
-              >
-                {item.name}
-              </label>
             </li>
           ))}
         </ul>

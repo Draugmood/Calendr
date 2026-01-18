@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-export default function Clock() {
+interface Props {
+  align?: "left" | "center" | "right";
+}
+
+export default function Clock({ align = "right" }: Props) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -9,7 +13,16 @@ export default function Clock() {
   }, []);
 
   return (
-    <div className="w-full text-right text-2xl font-bold text-gray-800 dark:text-gray-200">
+    <div
+      className={
+        `text-2xl font-bold text-gray-800 dark:text-gray-200` +
+        (align === "left"
+          ? " text-left"
+          : align === "center"
+          ? " text-center"
+          : " text-right")
+      }
+    >
       {time.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
