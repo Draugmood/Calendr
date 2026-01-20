@@ -29,3 +29,8 @@ coverage
 
 # Environment files
 .env*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
