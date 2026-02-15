@@ -63,7 +63,7 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
             <div>blæ</div>
           )}
         </div>
-        <ul className="w-full max-w-md max-h-80 space-y-2 overflow-y-auto pr-4">
+        <ul className="w-full max-w-md h-64 min-w-96 space-y-2 overflow-y-auto pr-4">
           {sortedItems.map((item) => (
             <li key={item.id}>
               <Checkbox

@@ -39,16 +39,23 @@ export default function Checkbox({
         </span>
       </div>
       {label && (
-        <span
-          className={[
-            "text-gray-300 text-lg leading-snug group-hover:text-gray-100 transition-colors select-none",
-            checked
-              ? "line-through text-gray-500"
-              : "text-gray-900 dark:text-gray-300",
-          ].join(" ")}
+        <div
+          className="flex-1 overflow-hidden min-w-0 @container"
+          title={label}
         >
-          {label}
-        </span>
+          <div
+            className={[
+              "whitespace-nowrap w-fit animate-scroll-peek",
+              "text-lg leading-snug group-hover:text-gray-100",
+              "transition-colors select-none text-nowrap",
+              checked
+                ? "line-through text-gray-500"
+                : "text-gray-900 dark:text-gray-300",
+            ].join(" ")}
+          >
+            {label}
+          </div>
+        </div>
       )}
     </label>
   );

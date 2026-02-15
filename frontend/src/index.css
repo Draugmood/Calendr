@@ -8,6 +8,17 @@
   }
 }
 
+@layer utilities {
+  @keyframes scroll-peek {
+    0%, 25% { transform: translateX(0); }
+    75%, 100% { transform: translateX(min(0px, calc(-100% + 100cqw))); }
+  }
+
+  .animate-scroll-peek {
+    animation: scroll-peek 8s ease-in-out infinite alternate;
+  }
+}
+
 html,
 body,
 #root {
