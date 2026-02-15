@@ -15,7 +15,7 @@ export default function Clock({ align = "right" }: Props) {
   return (
     <div
       className={
-        `text-2xl font-bold text-gray-800 dark:text-gray-200` +
+        `text-4xl font-bold text-gray-800 dark:text-gray-200` +
         (align === "left"
           ? " text-left"
           : align === "center"
@@ -26,7 +26,6 @@ export default function Clock({ align = "right" }: Props) {
       {time.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
-        second: "2-digit",
         hour12: false,
       })}
     </div>
