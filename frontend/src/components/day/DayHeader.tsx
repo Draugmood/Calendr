@@ -1,3 +1,4 @@
+import { CALENDAR_LAYOUT } from "@/config/calendarLayout";
 import { DateTime } from "luxon";
 
 interface Props {
@@ -10,16 +11,19 @@ export default function DayHeader({ day, date }: Props) {
 
   return (
     <div
-      className={
-        `font-bold text-center` +
-        (isToday
-          ? " text-blue-500 dark:text-sky-600"
-          : " text-gray-700 dark:text-gray-300")
-      }
+      className="text-center"
+      style={{ minHeight: CALENDAR_LAYOUT.dayHeaderHeight }}
     >
-      {day}
-      <br />
-      {date.toFormat("dd LLL")}
+      <span
+        className={`block font-bold ${isToday ? "text-blue-500" : "text-gray-700 dark:text-gray-300"}`}
+      >
+        {day}
+      </span>
+      <span
+        className={`text-sm ${isToday ? "text-blue-500 font-bold" : "text-gray-500"}`}
+      >
+        {date.toFormat("dd LLL")}
+      </span>
     </div>
   );
 }

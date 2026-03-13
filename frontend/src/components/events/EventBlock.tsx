@@ -1,7 +1,8 @@
+import type { CalendarEvent } from "@/types/calendarEvent";
 import { EventFunctions } from "@/utils/EventFunctions";
 
 interface Props {
-  event: any;
+  event: CalendarEvent;
   top: number;
   height: number;
 }
@@ -10,7 +11,7 @@ export default function EventBlock({ event, top, height }: Props) {
   return (
     <div
       key={event.id}
-      className={`z-10 absolute left-1 right-1 text-black text-xs border border-slate-800 rounded-lg shadow-xl px-2 py-1 max-w-full ${EventFunctions.getEventColorClass(
+      className={`z-10 absolute left-1 right-1 min-h-10.5 text-black text-xs border border-slate-800 rounded-lg shadow-xl px-2 py-1 max-w-full ${EventFunctions.getEventColorClass(
         event,
       )}`}
       style={{

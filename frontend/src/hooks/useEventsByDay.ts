@@ -1,15 +1,8 @@
 import type { CalendarEvent } from "@/types/calendarEvent";
 import { DateTimeFunctions } from "@/utils/DateTimeFunctions";
+import { EventFunctions } from "@/utils/EventFunctions";
 import { DateTime } from "luxon";
 import { useMemo } from "react";
-
-function eventStartDate(event: CalendarEvent): DateTime | null {
-  const raw = event.start?.dateTime || event.start?.date;
-  if (!raw) return null;
-
-  const dateTime = DateTime.fromISO(raw, { setZone: true });
-  return dateTime.isValid ? dateTime : null;
-}
 
 export function useEventsByDay(
   datesInWeek: DateTime[],
@@ -23,7 +16,7 @@ export function useEventsByDay(
     }
 
     for (const event of events) {
-      const startDate = eventStartDate(event);
+      const startDate = EventFunctions.getEventStartDate(event);
       if (!startDate) continue;
 
       const dateKey = DateTimeFunctions.toDateKey(startDate);
@@ -34,8 +27,8 @@ export function useEventsByDay(
 
     for (const key of Object.keys(grouped)) {
       grouped[key].sort((a, b) => {
-        const aDate = eventStartDate(a)?.toMillis() ?? 0;
-        const bDate = eventStartDate(b)?.toMillis() ?? 0;
+        const aDate = EventFunctions.getEventStartDate(a)?.toMillis() ?? 0;
+        const bDate = EventFunctions.getEventStartDate(b)?.toMillis() ?? 0;
         return aDate - bDate;
       });
     }

@@ -1,17 +1,10 @@
 import type { CalendarEvent } from "@/types/calendarEvent";
 import type { GoogleCalendarListItem } from "@/types/googleCalendarListItem";
 import { DateTimeFunctions } from "@/utils/DateTimeFunctions";
+import { EventFunctions } from "@/utils/EventFunctions";
 import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 import { DateTime } from "luxon";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-function eventStartDateTime(event: CalendarEvent): DateTime | null {
-  const raw = event.start?.dateTime || event.start?.date;
-  if (!raw) return null;
-
-  const dateTime = DateTime.fromISO(raw, { setZone: true });
-  return dateTime.isValid ? dateTime : null;
-}
 
 export function useGoogleCalendarEvents(
   accessToken: string | null,
@@ -107,8 +100,8 @@ export function useGoogleCalendarEvents(
         const allEvents = eventArrays.flat();
 
         allEvents.sort((a, b) => {
-          const aDateTime = eventStartDateTime(a);
-          const bDateTime = eventStartDateTime(b);
+          const aDateTime = EventFunctions.getEventStartDate(a);
+          const bDateTime = EventFunctions.getEventStartDate(b);
 
           if (!aDateTime && !bDateTime) return 0;
           if (!aDateTime) return 1;
