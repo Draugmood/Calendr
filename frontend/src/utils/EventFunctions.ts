@@ -33,13 +33,14 @@ export class EventFunctions {
 
   static getEventColorClass(event: CalendarEvent) {
     const colorMapping: Record<string, string> = {
-      "1": "bg-green-100",
+      "1": "bg-indigo-300",
       "2": "bg-green-500",
       "3": "bg-fuchsia-600",
       "4": "bg-purple-500",
       "5": "bg-amber-400",
       "6": "bg-yellow-500",
       "7": "bg-blue-400",
+      "11": "bg-red-500",
     };
 
     // If colorId is present and matches a key, return that class.

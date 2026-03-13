@@ -110,7 +110,7 @@ export default function WeekGrid({ accessToken }: Props) {
           ))}
         </div>
         {allDayEvents.length > 0 && (
-          <div className="grid grid-cols-7 w-full gap-1 auto-rows-fr">
+          <div className="grid grid-cols-7 w-full auto-rows-fr gap-x-1 mb-1">
             {allDayEvents.map((event) => (
               <AllDayEventBlock
                 key={event.id}
