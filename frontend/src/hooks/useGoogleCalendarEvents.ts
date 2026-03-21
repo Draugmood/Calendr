@@ -97,7 +97,12 @@ export function useGoogleCalendarEvents(
           }),
         );
 
-        const allEvents = eventArrays.flat();
+        const allEvents = eventArrays
+          .flat()
+          .filter(
+            (event) =>
+              (event.summary ?? "").trim().toLowerCase() !== "permisjon",
+          );
 
         allEvents.sort((a, b) => {
           const aDateTime = EventFunctions.getEventStartDate(a);
