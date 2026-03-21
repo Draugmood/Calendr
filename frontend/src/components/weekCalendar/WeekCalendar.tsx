@@ -7,6 +7,7 @@ import { WeekProvider } from "@/contexts/WeekContext";
 import { useGoogleToken } from "@/hooks/useGoogleToken";
 import { useEffect } from "react";
 import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
+import ReminderLiveOverlay from "@/components/reminders/ReminderLiveOverlay";
 
 export default function WeekCalendar() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -59,6 +60,7 @@ export default function WeekCalendar() {
           </div>
         )}
         <WeekGrid accessToken={access_token} />
+        <ReminderLiveOverlay />
       </div>
     </WeekProvider>
   );

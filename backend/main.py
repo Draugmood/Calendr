@@ -1,12 +1,16 @@
-import os
-import sqlite3
+from reminders import router as reminders_router
+from db import get_db, init_db
 import httpx
+import os
 from datetime import datetime
 from typing import Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+
+load_dotenv(".env.development")
+
 
 app = FastAPI()
 
@@ -19,87 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-load_dotenv(".env.development")
-
-DB_FILE = os.environ.get("CALENDR_DB_FILE", "/var/lib/calendr/calendr.db")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.environ.get(
     "GOOGLE_REDIRECT_URI", "http://localhost:5173")
-
-
-def get_db():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS system_kv (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS recurring_lists (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            cadence TEXT NOT NULL, -- 'daily', 'weekly'
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS recurring_list_items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            list_id INTEGER NOT NULL,
-            text TEXT NOT NULL,
-            sort_order INTEGER DEFAULT 0,
-            FOREIGN KEY(list_id) REFERENCES recurring_lists(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS recurring_instances (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            list_id INTEGER NOT NULL,
-            period_key TEXT NOT NULL, -- e.g. '2026-01-07' for daily, '2026-W01' for weekly
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(list_id, period_key)
-        );
-
-        CREATE TABLE IF NOT EXISTS recurring_instance_item_state (
-            instance_id INTEGER NOT NULL,
-            item_id INTEGER NOT NULL,
-            completed BOOLEAN DEFAULT 0,
-            completed_at TIMESTAMP,
-            PRIMARY KEY (instance_id, item_id),
-            FOREIGN KEY(instance_id) REFERENCES recurring_instances(id),
-            FOREIGN KEY(item_id) REFERENCES recurring_list_items(id)
-        );
-    """)
-
-    cursor.execute("SELECT count(*) as count FROM recurring_lists")
-    if cursor.fetchone()['count'] == 0:
-        print("Seeding empty database...")
-        cursor.execute(
-            "INSERT INTO recurring_lists (name, cadence) VALUES (?, ?)", (
-                "Daily Routine", "daily")
-        )
-        list_id = cursor.lastrowid
-        items = [
-            ("Check emails", 1),
-            ("Stand-up meeting", 2),
-            ("Code review", 3)
-        ]
-        cursor.executemany("""
-            INSERT INTO recurring_list_items (list_id, text, sort_order)
-            VALUES (?, ?, ?)
-        """, [(list_id, text, order) for text, order in items]
-        )
-        conn.commit()
-    conn.close()
-
-
 init_db()
 
 
@@ -288,6 +215,9 @@ async def get_google_access_token():
             "access_token": data.get("access_token"),
             "expires_in": data.get("expires_in"),
         }
+
+
+app.include_router(reminders_router)
 
 
 if __name__ == "__main__":
