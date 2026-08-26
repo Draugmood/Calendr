@@ -2,6 +2,7 @@ from reminders import router as reminders_router
 from db import get_db, init_db
 import httpx
 import os
+import time
 from datetime import datetime
 from typing import Any
 from fastapi import FastAPI, HTTPException
@@ -28,6 +29,39 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.environ.get(
     "GOOGLE_REDIRECT_URI", "http://localhost:5173")
 init_db()
+
+ACCESS_TOKEN_SKEW_SECONDS = 60
+_access_token_cache: dict[str, Any] = {"token": None, "expires_at": 0.0}
+
+
+def _cache_access_token(token: str | None, expires_in: Any):
+    if not token:
+        _access_token_cache.update({"token": None, "expires_at": 0.0})
+        return
+    try:
+        lifetime = int(expires_in)
+    except (TypeError, ValueError):
+        lifetime = 3600
+    _access_token_cache.update(
+        {"token": token, "expires_at": time.monotonic() + lifetime}
+    )
+
+
+def _cached_access_token() -> tuple[str, int] | None:
+    token = _access_token_cache["token"]
+    remaining = int(_access_token_cache["expires_at"] - time.monotonic())
+    if token and remaining > ACCESS_TOKEN_SKEW_SECONDS:
+        return token, remaining
+    return None
+
+
+def _clear_stored_refresh_token():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM system_kv WHERE key = 'google_refresh_token'")
+    conn.commit()
+    conn.close()
+    _cache_access_token(None, None)
 
 
 def get_period_key(cadence: str) -> str:
@@ -157,20 +191,24 @@ async def exchange_google_code(code_data: dict[str, str]):
         refresh_token = data.get("refresh_token")
 
         if not refresh_token:
-            pass  # TODO?
+            raise HTTPException(
+                status_code=400,
+                detail="Google did not return a refresh token. Revoke app access and authorize again."
+            )
 
         conn = get_db()
         cursor = conn.cursor()
 
-        if refresh_token:
-            cursor.execute("""
-                INSERT INTO system_kv (key, value) VALUES (?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value
-                """, ("google_refresh_token", refresh_token)
-            )
+        cursor.execute("""
+            INSERT INTO system_kv (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """, ("google_refresh_token", refresh_token)
+        )
 
         conn.commit()
         conn.close()
+
+        _cache_access_token(data.get("access_token"), data.get("expires_in"))
 
     return {"success": True}
 
@@ -178,6 +216,11 @@ async def exchange_google_code(code_data: dict[str, str]):
 @app.get("/api/auth/google/token")
 async def get_google_access_token():
     """Get access token using stored refresh token"""
+    cached = _cached_access_token()
+    if cached:
+        token, expires_in = cached
+        return {"access_token": token, "expires_in": expires_in}
+
     conn = get_db()
     cursor = conn.cursor()
     token_row = cursor.execute(
@@ -194,23 +237,43 @@ async def get_google_access_token():
     refresh_token = token_row['value']
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "refresh_token": refresh_token,
-                "grant_type": "refresh_token",
-            }
-        )
+        try:
+            response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "refresh_token": refresh_token,
+                    "grant_type": "refresh_token",
+                }
+            )
+        except httpx.HTTPError as error:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Could not reach Google token endpoint: {error}"
+            )
 
         if response.status_code != 200:
+            error_code = ""
+            try:
+                error_code = response.json().get("error", "")
+            except ValueError:
+                pass
+
+            # invalid_grant means the refresh token is revoked/expired, so re-consent is required
+            if error_code == "invalid_grant":
+                _clear_stored_refresh_token()
+                raise HTTPException(
+                    status_code=401, detail="reauth_required")
+
             raise HTTPException(
-                status_code=400,
+                status_code=502,
                 detail=f"Google Token Refresh Failed: {response.text}"
             )
 
         data = response.json()
+        _cache_access_token(data.get("access_token"), data.get("expires_in"))
+
         return {
             "access_token": data.get("access_token"),
             "expires_in": data.get("expires_in"),

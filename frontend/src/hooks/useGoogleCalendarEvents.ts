@@ -4,15 +4,29 @@ import { DateTimeFunctions } from "@/utils/DateTimeFunctions";
 import { EventFunctions } from "@/utils/EventFunctions";
 import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 import { DateTime } from "luxon";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const AUTH_ERROR_THROTTLE_MS = 60 * 1000;
 
 export function useGoogleCalendarEvents(
   accessToken: string | null,
   weekStart?: DateTime,
+  onAuthError?: () => void,
 ) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const onAuthErrorRef = useRef(onAuthError);
+  onAuthErrorRef.current = onAuthError;
+  const lastAuthErrorAtRef = useRef(0);
+
+  const reportAuthError = useCallback(() => {
+    const now = Date.now();
+    if (now - lastAuthErrorAtRef.current < AUTH_ERROR_THROTTLE_MS) return;
+    lastAuthErrorAtRef.current = now;
+    onAuthErrorRef.current?.();
+  }, []);
 
   const effectiveWeekStart = useMemo(
     () => DateTimeFunctions.startOfWeekMonday(weekStart ?? DateTime.now()),
@@ -31,6 +45,9 @@ export function useGoogleCalendarEvents(
         },
       },
     );
+    if (response.status === 401) {
+      reportAuthError();
+    }
     if (!response.ok) {
       throw new Error(
         `Failed to fetch calendar list: ${response.status} ${response.statusText}`,
@@ -40,7 +57,7 @@ export function useGoogleCalendarEvents(
     const calendars = (data.items ?? []) as GoogleCalendarListItem[];
 
     return calendars.filter((calendar) => !calendar.id.includes("weeknum"));
-  }, [accessToken]);
+  }, [accessToken, reportAuthError]);
 
   const fetchEventsForWeek = useCallback(
     async (weekStartDate: DateTime, isBackground: boolean = false) => {
@@ -76,6 +93,9 @@ export function useGoogleCalendarEvents(
                   Authorization: `Bearer ${accessToken}`,
                 },
               });
+              if (response.status === 401) {
+                reportAuthError();
+              }
               if (!response.ok) {
                 throw new Error(
                   `Failed to fetch events for calendar ${calendar.id}: ${response.status} ${response.statusText}`,
@@ -126,7 +146,7 @@ export function useGoogleCalendarEvents(
         if (!isBackground) setIsLoading(false);
       }
     },
-    [accessToken, effectiveWeekStart, fetchCalendars],
+    [accessToken, effectiveWeekStart, fetchCalendars, reportAuthError],
   );
 
   useEffect(() => {

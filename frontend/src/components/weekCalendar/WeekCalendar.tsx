@@ -13,7 +13,7 @@ export default function WeekCalendar() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { redirectToGoogleAuth } = useGoogleAuthRedirect();
 
-  const access_token = useGoogleToken();
+  const { accessToken, needsAuth, refresh } = useGoogleToken();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -51,7 +51,7 @@ export default function WeekCalendar() {
             {isDarkMode ? "☀️" : "🌙"}
           </button>
         </div>
-        {access_token === null && (
+        {needsAuth && (
           <div className="my-4">
             <PrimaryButton
               onClick={redirectToGoogleAuth}
@@ -59,7 +59,7 @@ export default function WeekCalendar() {
             />
           </div>
         )}
-        <WeekGrid accessToken={access_token} />
+        <WeekGrid accessToken={accessToken} onAuthError={refresh} />
         <ReminderLiveOverlay />
       </div>
     </WeekProvider>

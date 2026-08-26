@@ -11,9 +11,10 @@ import AllDayEventBlock from "../events/AllDayEventBlock";
 
 interface Props {
   accessToken: string | null;
+  onAuthError?: () => void;
 }
 
-export default function WeekGrid({ accessToken }: Props) {
+export default function WeekGrid({ accessToken, onAuthError }: Props) {
   const hourHeight = CALENDAR_LAYOUT.hourHeightPx;
   const gridStartHour = CALENDAR_LAYOUT.gridStartHour;
   const gridEndHour = CALENDAR_LAYOUT.gridEndHour;
@@ -33,7 +34,11 @@ export default function WeekGrid({ accessToken }: Props) {
   const { datesInWeek } = useWeek();
   const weekStartDate = datesInWeek[0];
   const weekEndDate = datesInWeek[6].plus({ days: 1 });
-  const useEvents = useGoogleCalendarEvents(accessToken ?? null, weekStartDate);
+  const useEvents = useGoogleCalendarEvents(
+    accessToken ?? null,
+    weekStartDate,
+    onAuthError,
+  );
 
   const allEvents = useEvents.events;
   const timedEvents = allEvents.filter(
