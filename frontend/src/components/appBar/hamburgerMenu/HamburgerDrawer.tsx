@@ -1,3 +1,4 @@
+import MorningRoutineButton from "@/components/morningRoutine/MorningRoutineButton";
 import ResetButton from "@/components/resetModal/ResetButton";
 import { APP_BAR_HEIGHT } from "@/config/layout";
 import { createPortal } from "react-dom";
@@ -37,6 +38,7 @@ export default function HamburgerDrawer({ isOpen, onClose }: Props) {
           <h2 className="px-4 pt-4 text-2xl">Meny</h2>
           <hr className="w-full border-slate-300 dark:border-slate-700" />
           <ResetButton onDrawerClose={onClose} />
+          <MorningRoutineButton onDrawerClose={onClose} />
         </div>
       </div>
     </>,
