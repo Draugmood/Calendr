@@ -33,7 +33,7 @@ export default function HamburgerDrawer({ isOpen, onClose }: Props) {
           outlineStyle: "outset",
         }}
       >
-        <div className=" flex flex-col items-start gap-4">
+        <div className="flex flex-col items-start gap-4">
           <h2 className="px-4 pt-4 text-2xl">Meny</h2>
           <hr className="w-full border-slate-300 dark:border-slate-700" />
           <ResetButton onDrawerClose={onClose} />

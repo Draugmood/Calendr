@@ -1,11 +1,12 @@
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional, TypedDict, cast
+from typing import Any, Optional, cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dateutil.rrule import rrulestr
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 from db import get_db
 

@@ -26,7 +26,7 @@ export default function QrCodeButton({ qrCodeImage }: Props) {
           <img
             src={qrCodeImage}
             alt="QR Code"
-            className="max-w-full max-h-full rounded-lg shadow-lg"
+            className="max-w-xs max-h-full rounded-lg shadow-lg"
           />
         </div>
       )}
