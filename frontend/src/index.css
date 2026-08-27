@@ -17,6 +17,25 @@
   .animate-scroll-peek {
     animation: scroll-peek 8s ease-in-out infinite alternate;
   }
+
+  @keyframes confetti-burst {
+    0% {
+      transform: translate(-50%, -50%) rotate(0deg) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(
+          calc(-50% + var(--confetti-tx)),
+          calc(-50% + var(--confetti-ty))
+        )
+        rotate(var(--confetti-rot)) scale(0.5);
+      opacity: 0;
+    }
+  }
+
+  .animate-confetti-piece {
+    animation: confetti-burst 700ms ease-out forwards;
+  }
 }
 
 html,
