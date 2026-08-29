@@ -34,3 +34,7 @@ coverage
 *.db
 *.sqlite
 *.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
