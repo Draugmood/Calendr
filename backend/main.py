@@ -32,6 +32,9 @@ init_db()
 
 ACCESS_TOKEN_SKEW_SECONDS = 60
 _access_token_cache: dict[str, Any] = {"token": None, "expires_at": 0.0}
+MET_NORWAY_USER_AGENT = "Calendr/1.0 (https://github.com/Draugmood/Calendr)"
+TOLINES_VEI_LATITUDE = 59.267
+TOLINES_VEI_LONGITUDE = 10.407
 
 
 def _cache_access_token(token: str | None, expires_in: Any):
@@ -70,6 +73,29 @@ def get_period_key(cadence: str) -> str:
         year, week, _ = now.isocalendar()
         return f"{year}-W{week:02d}"
     return now.strftime("%Y-%m-%d")
+
+
+@app.get("/api/weather/today")
+async def get_todays_weather():
+    url = (
+        "https://api.met.no/weatherapi/locationforecast/2.0/compact"
+        f"?lat={TOLINES_VEI_LATITUDE}&lon={TOLINES_VEI_LONGITUDE}"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                url,
+                headers={"User-Agent": MET_NORWAY_USER_AGENT},
+            )
+            response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not fetch weather forecast: {error}",
+        )
+
+    return response.json()
 
 
 class ItemUpdate(BaseModel):

@@ -36,6 +36,66 @@
   .animate-confetti-piece {
     animation: confetti-burst 700ms ease-out forwards;
   }
+
+  @keyframes tile-scroll-out-left {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-110%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes tile-scroll-out-right {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(110%);
+      opacity: 0;
+    }
+  }
+
+  .animate-tile-scroll-out-left {
+    animation: tile-scroll-out-left 320ms ease-in forwards;
+  }
+
+  .animate-tile-scroll-out-right {
+    animation: tile-scroll-out-right 320ms ease-in forwards;
+  }
+
+  @keyframes tile-scroll-in-left {
+    from {
+      transform: translateX(110%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes tile-scroll-in-right {
+    from {
+      transform: translateX(-110%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-tile-scroll-in-left {
+    animation: tile-scroll-in-left 320ms ease-out forwards;
+  }
+
+  .animate-tile-scroll-in-right {
+    animation: tile-scroll-in-right 320ms ease-out forwards;
+  }
 }
 
 html,

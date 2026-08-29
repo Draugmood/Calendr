@@ -6,29 +6,57 @@ const TRELLO_API_BASE = "https://api.trello.com/1";
 
 const TRELLO_KEY = import.meta.env.VITE_TRELLO_KEY as string;
 const TRELLO_TOKEN = import.meta.env.VITE_TRELLO_TOKEN as string;
+const checklistCache = new Map<string, Checklist>();
+const checklistRequests = new Map<string, Promise<Checklist>>();
+
+function getChecklistUrl(checklistId: string): string {
+  return `${TRELLO_API_BASE}/checklists/${checklistId}?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`;
+}
+
+async function loadChecklist(checklistId: string): Promise<Checklist> {
+  const cachedChecklist = checklistCache.get(checklistId);
+  if (cachedChecklist) return cachedChecklist;
+
+  const existingRequest = checklistRequests.get(checklistId);
+  if (existingRequest) return existingRequest;
+
+  const request = fetchWithTimeout(getChecklistUrl(checklistId))
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Trello API request failed with status ${response.status}`);
+      }
+
+      const checklist = (await response.json()) as Checklist;
+      checklistCache.set(checklistId, checklist);
+      return checklist;
+    })
+    .finally(() => checklistRequests.delete(checklistId));
+
+  checklistRequests.set(checklistId, request);
+  return request;
+}
+
+export function prefetchTrelloChecklist(checklistId: string): Promise<void> {
+  return loadChecklist(checklistId).then(() => undefined);
+}
 
 export function useTrelloChecklist(checklistId?: string) {
-  const url = `${TRELLO_API_BASE}/checklists/${checklistId}?key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`;
-
-  const [checklist, setChecklist] = useState<Checklist | null>(null);
+  const [checklist, setChecklist] = useState<Checklist | null>(
+    () => (checklistId ? checklistCache.get(checklistId) ?? null : null),
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchChecklist = useCallback(
     async (isBackground = false) => {
-      if (!isBackground) setIsLoading(true);
+      if (!checklistId) return;
+
+      const cachedChecklist = checklistCache.get(checklistId);
+      if (!isBackground && !cachedChecklist) setIsLoading(true);
       setErrorMessage(null);
 
       try {
-        const response = await fetchWithTimeout(url);
-        if (!response.ok) {
-          throw new Error(
-            `Trello API request failed with status ${response.status}`,
-          );
-        }
-        const data = (await response.json()) as Checklist;
-
-        setChecklist(data);
+        setChecklist(await loadChecklist(checklistId));
       } catch (error: any) {
         if (!isBackground) {
           setErrorMessage(error?.message ?? "Failed to fetch Trello checklist");
@@ -36,10 +64,10 @@ export function useTrelloChecklist(checklistId?: string) {
           console.warn("Background sync failed:", error);
         }
       } finally {
-        if (!isBackground) setIsLoading(false);
+        if (!isBackground && !cachedChecklist) setIsLoading(false);
       }
     },
-    [url],
+    [checklistId],
   );
 
   const updateChecklistItem = useCallback(
