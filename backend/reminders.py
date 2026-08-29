@@ -316,11 +316,11 @@ def format_recurrence_text(recurrence_rule: Optional[str]) -> Optional[str]:
         if not days:
             return "Gjentas ukentlig"
         labels = [WEEKDAY_LABELS.get(day, day) for day in days.split(",")]
-        return f"Gjentas ukentlig på {', '.join(labels)}"
+        return f"Gjentas ukentlig på {', '.join(labels)}er"
     if frequency == "MONTHLY":
-        day = parts.get("BYMONTHDAY")
-        if day:
-            return f"Gjentas månedlig på {day}er"
+        date = parts.get("BYMONTHDAY")
+        if date:
+            return f"Gjentas hver måned den {date}."
         return "Gjentas månedlig"
     if frequency == "YEARLY":
         return "Gjentas årlig"
