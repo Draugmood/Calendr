@@ -11,18 +11,28 @@ const PERIODS = [
   { label: "Kveld", hour: 19 },
 ] as const;
 const TOMORROW_FORECAST_CUTOFF_HOUR = 19;
+const WEATHER_ICON_BASE_URL =
+  "https://cdn.jsdelivr.net/gh/metno/weathericons@latest/weather/svg";
 
-function weatherIcon(symbolCode: string): string {
-  if (symbolCode.includes("thunder")) return "⛈";
-  if (symbolCode.includes("snow") || symbolCode.includes("sleet")) return "❄";
-  if (symbolCode.includes("rain")) return "🌧";
-  if (symbolCode.includes("fog")) return "🌫";
-  if (symbolCode.includes("partlycloudy")) return "⛅";
-  if (symbolCode.includes("cloudy")) return "☁";
-  if (symbolCode.includes("clearsky") || symbolCode.includes("fair")) {
-    return symbolCode.endsWith("_night") ? "☾" : "☀";
-  }
-  return "☁";
+function getSymbolCode(forecast?: WeatherForecastTimeStep): string {
+  return (
+    forecast?.data.next_1_hours?.summary.symbol_code ??
+    forecast?.data.next_6_hours?.summary.symbol_code ??
+    forecast?.data.next_12_hours?.summary.symbol_code ??
+    "cloudy"
+  );
+}
+
+function WeatherIcon({ symbolCode }: { symbolCode: string }) {
+  return (
+    <img
+      src={`${WEATHER_ICON_BASE_URL}/${symbolCode}.svg`}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      className="h-16 w-16 select-none object-contain"
+    />
+  );
 }
 
 function closestForecast(
@@ -82,14 +92,12 @@ export default function WeatherTile() {
               forecastDate.set({ hour: period.hour }),
             );
             const temperature = forecast?.data.instant.details.air_temperature;
-            const symbolCode = forecast?.data.next_1_hours?.summary.symbol_code ?? "cloudy";
+            const symbolCode = getSymbolCode(forecast);
 
             return (
               <div key={period.label} className="flex flex-col items-center justify-center gap-3">
                 <span className="font-semibold">{period.label}</span>
-                <span aria-hidden="true" className="text-5xl leading-none">
-                  {weatherIcon(symbolCode)}
-                </span>
+                <WeatherIcon symbolCode={symbolCode} />
                 <span className="text-2xl font-bold">
                   {temperature === undefined ? "-" : `${Math.round(temperature)}°`}
                 </span>

@@ -14,6 +14,16 @@ export interface WeatherForecastTimeStep {
         symbol_code: string;
       };
     };
+    next_6_hours?: {
+      summary: {
+        symbol_code: string;
+      };
+    };
+    next_12_hours?: {
+      summary: {
+        symbol_code: string;
+      };
+    };
   };
 }
 
