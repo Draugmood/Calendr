@@ -24,7 +24,11 @@ interface Props {
 const morningRoutineSections: MorningRoutineSection[] = [
   {
     title: "Morten",
-    items: [{ label: "Rent skift jobbklær" }, { label: "Matpakke" }],
+    items: [
+      { label: "Rent skift jobbklær" },
+      { label: "Matpakke" },
+      { label: "Rydde klær" },
+    ],
   },
   {
     title: "Line",
