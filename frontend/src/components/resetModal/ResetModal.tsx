@@ -15,6 +15,7 @@ export default function ResetModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   const checklistItems = [
+    "Sette på lading (bil, sykkel, babycall)",
     "Rydd vekk fra kjøkkenbord",
     "Tømme oppvaskkum",
     "Fylle oppvaskmaskin og sette på",
