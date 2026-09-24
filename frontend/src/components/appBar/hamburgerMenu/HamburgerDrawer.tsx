@@ -1,3 +1,4 @@
+import ChoresButton from "@/components/chores/ChoresButton";
 import MorningRoutineButton from "@/components/morningRoutine/MorningRoutineButton";
 import ResetButton from "@/components/resetModal/ResetButton";
 import { APP_BAR_HEIGHT } from "@/config/layout";
@@ -39,6 +40,7 @@ export default function HamburgerDrawer({ isOpen, onClose }: Props) {
           <hr className="w-full border-slate-300 dark:border-slate-700" />
           <ResetButton onDrawerClose={onClose} />
           <MorningRoutineButton onDrawerClose={onClose} />
+          <ChoresButton onDrawerClose={onClose} />
         </div>
       </div>
     </>,

@@ -120,6 +120,23 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
         CREATE INDEX IF NOT EXISTS idx_reminders_due_at ON reminders(due_at_utc);
         CREATE INDEX IF NOT EXISTS idx_reminders_snoozed_until ON reminders(snoozed_until_utc);
+
+        CREATE TABLE IF NOT EXISTS chores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            frequency_days INTEGER NOT NULL CHECK(frequency_days > 0),
+            priority INTEGER NOT NULL DEFAULT 2 CHECK(priority IN (1, 2, 3)),
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS chore_completions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chore_id INTEGER NOT NULL REFERENCES chores(id) ON DELETE CASCADE,
+            completed_at_utc TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_chore_completions_chore
+            ON chore_completions(chore_id, completed_at_utc);
     """)
 
     ensure_column(cursor, "reminders", "timezone", "TEXT")
