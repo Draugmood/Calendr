@@ -1,4 +1,4 @@
-import checklistQr from "@/assets/qrCodes/checklistQr.png";
+import checklistQr from "@/assets/qrCodes/checklistQR.png";
 import dinnerQr from "@/assets/qrCodes/middagerQR.png";
 
 export const CHECKLIST_CONFIG = {
