@@ -33,11 +33,21 @@ interface WeatherForecastResponse {
   };
 }
 
+const WEATHER_MAX_AGE_MS = 15 * 60 * 1000;
+const WEATHER_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
 let weatherCache: WeatherForecastTimeStep[] | null = null;
+let weatherFetchedAt = 0;
 let weatherRequest: Promise<WeatherForecastTimeStep[]> | null = null;
 
+function isWeatherCacheFresh(): boolean {
+  return (
+    weatherCache !== null && Date.now() - weatherFetchedAt < WEATHER_MAX_AGE_MS
+  );
+}
+
 async function loadTodaysWeather(): Promise<WeatherForecastTimeStep[]> {
-  if (weatherCache) return weatherCache;
+  if (weatherCache && isWeatherCacheFresh()) return weatherCache;
   if (weatherRequest) return weatherRequest;
 
   weatherRequest = fetchWithTimeout("/api/weather/today")
@@ -48,6 +58,7 @@ async function loadTodaysWeather(): Promise<WeatherForecastTimeStep[]> {
 
       const data = (await response.json()) as WeatherForecastResponse;
       weatherCache = data.properties.timeseries;
+      weatherFetchedAt = Date.now();
       return weatherCache;
     })
     .finally(() => {
@@ -69,20 +80,47 @@ export function useTodaysWeather() {
   const [isLoading, setIsLoading] = useState(() => weatherCache === null);
 
   useEffect(() => {
+    let isActive = true;
+
     async function fetchWeather() {
       try {
-        setTimeSteps(await loadTodaysWeather());
+        const nextTimeSteps = await loadTodaysWeather();
+        if (!isActive) return;
+        setTimeSteps(nextTimeSteps);
         setErrorMessage(null);
       } catch (error: unknown) {
-        setErrorMessage(
-          error instanceof Error ? error.message : "Could not load weather",
-        );
+        if (!isActive) return;
+        // Keep showing the previous forecast if a background refresh fails.
+        if (weatherCache) {
+          console.warn("Background weather refresh failed:", error);
+        } else {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Could not load weather",
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (isActive) setIsLoading(false);
       }
     }
 
-    fetchWeather();
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && !isWeatherCacheFresh()) {
+        void fetchWeather();
+      }
+    }
+
+    void fetchWeather();
+    const intervalId = window.setInterval(
+      () => void fetchWeather(),
+      WEATHER_REFRESH_INTERVAL_MS,
+    );
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   return { timeSteps, errorMessage, isLoading };
