@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import PrimaryButton from "../buttons/PrimaryButton";
 import SecondaryButton from "../buttons/SecondaryButton";
+import DangerButton from "../buttons/DangerButton";
 import Checkbox from "../input/Checkbox";
 
 interface MorningRoutineItem {
@@ -89,11 +90,13 @@ export default function MorningRoutineModal({ isOpen, onClose }: Props) {
     new Array(totalItems).fill(false),
   );
   const [view, setView] = useState<"kids" | "everyone">("everyone");
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setCheckedItems(new Array(totalItems).fill(false));
       setView("everyone");
+      setConfirmingCancel(false);
     }
   }, [isOpen, totalItems]);
 
@@ -114,14 +117,9 @@ export default function MorningRoutineModal({ isOpen, onClose }: Props) {
   );
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+    // No backdrop click-to-close: accidental taps would wipe checklist progress.
+    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] flex flex-col">
         <div className="p-6 pb-2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
@@ -202,16 +200,34 @@ export default function MorningRoutineModal({ isOpen, onClose }: Props) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <SecondaryButton label="Avbryt" onClick={onClose} />
-          <div
-            className={`transition-opacity duration-200 ${
-              !allChecked ? "opacity-50 pointer-events-none" : "opacity-100"
-            }`}
-          >
-            <PrimaryButton label="Fullført" onClick={onClose} />
+        {confirmingCancel ? (
+          <div className="flex justify-end items-center gap-3">
+            <span className="text-gray-700 dark:text-gray-300 mr-auto">
+              Forkaste fremgangen?
+            </span>
+            <SecondaryButton
+              label="Nei"
+              onClick={() => setConfirmingCancel(false)}
+            />
+            <DangerButton label="Ja, avbryt" onClick={onClose} />
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-end gap-3">
+            <SecondaryButton
+              label="Avbryt"
+              onClick={() =>
+                checkedCount > 0 ? setConfirmingCancel(true) : onClose()
+              }
+            />
+            <div
+              className={`transition-opacity duration-200 ${
+                !allChecked ? "opacity-50 pointer-events-none" : "opacity-100"
+              }`}
+            >
+              <PrimaryButton label="Fullført" onClick={onClose} />
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,

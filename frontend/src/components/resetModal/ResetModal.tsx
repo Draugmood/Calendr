@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import PrimaryButton from "../buttons/PrimaryButton";
 import SecondaryButton from "../buttons/SecondaryButton";
+import DangerButton from "../buttons/DangerButton";
 import { createPortal } from "react-dom";
 import Checkbox from "../input/Checkbox";
 
@@ -12,8 +13,6 @@ interface Props {
 // TODO - ALIGN CHECKLIST WITH OTHER CHECKLISTS VISUAL STYLES
 
 export default function ResetModal({ isOpen, onClose }: Props) {
-  if (!isOpen) return null;
-
   const checklistItems = [
     "Sette på lading (bil, sykkel, babycall)",
     "Rydd vekk fra kjøkkenbord",
@@ -33,13 +32,17 @@ export default function ResetModal({ isOpen, onClose }: Props) {
   const [checkedItems, setCheckedItems] = useState<boolean[]>(
     new Array(checklistItems.length).fill(false),
   );
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   // Reset checkboxes when modal opens
   useEffect(() => {
     if (isOpen) {
       setCheckedItems(new Array(checklistItems.length).fill(false));
+      setConfirmingCancel(false);
     }
   }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const toggleItem = (index: number) => {
     const newChecked = [...checkedItems];
@@ -52,14 +55,9 @@ export default function ResetModal({ isOpen, onClose }: Props) {
   const progress = Math.round((checkedCount / checklistItems.length) * 100);
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-xl relative"
-        onClick={(e) => e.stopPropagation()}
-      >
+    // No backdrop click-to-close: accidental taps would wipe checklist progress.
+    <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-xl relative">
         <div className="p-6 pb-2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
@@ -102,22 +100,40 @@ export default function ResetModal({ isOpen, onClose }: Props) {
           </ul>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <SecondaryButton label="Avbryt" onClick={onClose} />
-          <div
-            className={`transition-opacity duration-200 ${
-              !allChecked ? "opacity-50 pointer-events-none" : "opacity-100"
-            }`}
-          >
-            <PrimaryButton
-              label="Fullført"
-              onClick={() => {
-                console.log("Resetting...");
-                onClose();
-              }}
+        {confirmingCancel ? (
+          <div className="flex justify-end items-center gap-3">
+            <span className="text-gray-700 dark:text-gray-300 mr-auto">
+              Forkaste fremgangen?
+            </span>
+            <SecondaryButton
+              label="Nei"
+              onClick={() => setConfirmingCancel(false)}
             />
+            <DangerButton label="Ja, avbryt" onClick={onClose} />
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-end gap-3">
+            <SecondaryButton
+              label="Avbryt"
+              onClick={() =>
+                checkedCount > 0 ? setConfirmingCancel(true) : onClose()
+              }
+            />
+            <div
+              className={`transition-opacity duration-200 ${
+                !allChecked ? "opacity-50 pointer-events-none" : "opacity-100"
+              }`}
+            >
+              <PrimaryButton
+                label="Fullført"
+                onClick={() => {
+                  console.log("Resetting...");
+                  onClose();
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,
