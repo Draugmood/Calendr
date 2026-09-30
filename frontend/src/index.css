@@ -103,3 +103,34 @@ body,
 #root {
   min-width: 320px;
 }
+
+:root {
+  --osk-offset: 0px;
+}
+
+/* On-screen keyboard. Unlayered so it wins over react-simple-keyboard's own stylesheet. */
+.hg-theme-default.osk-theme {
+  @apply bg-transparent p-0 font-[inherit];
+}
+
+.hg-theme-default.osk-theme .hg-button {
+  @apply h-14 rounded-lg border-0 text-xl shadow-none select-none
+    bg-white text-slate-900 dark:bg-zinc-700 dark:text-slate-100;
+}
+
+.hg-theme-default.osk-theme .hg-button.hg-activeButton {
+  @apply bg-cyan-600 text-stone-950;
+}
+
+.hg-theme-default.osk-theme .hg-button.osk-action {
+  @apply bg-gray-300 dark:bg-zinc-800;
+}
+
+.hg-theme-default.osk-theme .hg-button.osk-active,
+.hg-theme-default.osk-theme .hg-button.osk-primary {
+  @apply bg-cyan-600 text-stone-950 font-medium;
+}
+
+.hg-theme-default.osk-theme .hg-button.osk-space {
+  @apply grow-[6];
+}

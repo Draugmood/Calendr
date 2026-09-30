@@ -1,5 +1,7 @@
 import PrimaryButton from "@/components/buttons/PrimaryButton";
 import SecondaryButton from "@/components/buttons/SecondaryButton";
+import { segmentClass } from "@/components/buttons/segmentClass";
+import TextInput from "@/components/input/TextInput";
 import {
   type Chore,
   type ChorePayload,
@@ -23,14 +25,6 @@ interface Props {
   chore: Chore | null;
   onClose: () => void;
   onSubmit: (payload: ChorePayload) => Promise<unknown>;
-}
-
-function segmentClass(isActive: boolean): string {
-  return `rounded px-3 py-1.5 text-sm font-medium cursor-pointer transition-colors ${
-    isActive
-      ? "bg-cyan-600 text-stone-950"
-      : "bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700"
-  }`;
 }
 
 export default function ChoreFormModal({ chore, onClose, onSubmit }: Props) {
@@ -63,28 +57,20 @@ export default function ChoreFormModal({ chore, onClose, onSubmit }: Props) {
   };
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg text-left flex flex-col gap-5"
-        onClick={(event) => event.stopPropagation()}
-      >
+    // No backdrop click-to-close: while typing, a stray tap outside the field would
+    // discard the form.
+    <div className="fixed inset-x-0 top-0 bottom-(--osk-offset) z-50 p-4 flex items-center justify-center bg-black/60">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg max-h-full overflow-y-auto text-left flex flex-col gap-5">
         <h2 className="text-xl font-bold">
           {chore ? "Rediger oppgave" : "Ny oppgave"}
         </h2>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-500 dark:text-gray-400">Oppgave</span>
-          <input
-            className="border border-gray-400 rounded px-3 py-2 bg-transparent"
-            type="text"
+          <TextInput
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void handleSubmit();
-            }}
+            onChange={setTitle}
+            onEnter={() => void handleSubmit()}
             placeholder="F.eks. Vaske toalettet"
             autoFocus
           />
@@ -107,12 +93,14 @@ export default function ChoreFormModal({ chore, onClose, onSubmit }: Props) {
             ))}
           </div>
           <label className="flex items-center gap-2 text-sm">
-            <input
-              className="w-20 border border-gray-400 rounded px-2 py-1 bg-transparent"
-              type="number"
-              min={1}
-              value={Number.isNaN(frequencyDays) ? "" : frequencyDays}
-              onChange={(event) => setFrequencyDays(event.target.valueAsNumber)}
+            <TextInput
+              className="w-20 px-2! py-1!"
+              layout="numeric"
+              value={Number.isNaN(frequencyDays) ? "" : String(frequencyDays)}
+              onChange={(value) =>
+                setFrequencyDays(parseInt(value.replace(/\D/g, ""), 10))
+              }
+              onEnter={() => void handleSubmit()}
             />
             dager
           </label>
