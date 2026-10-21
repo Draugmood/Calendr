@@ -17,10 +17,12 @@ HEALTH_URL="${HEALTH_URL:-http://localhost/api/auth/google/status}"   # checked 
 REQUIRED_FRONTEND_ENV=(VITE_GOOGLE_CLIENT_ID VITE_TRELLO_KEY VITE_TRELLO_TOKEN)
 
 TARGET="${PI_USER}@${PI_HOST}"
-REMOTE_STAGE="${REMOTE_APP_DIR}/.deploy-staging"
+# Unique per run, so overlapping deploys never share (or delete) each other's upload
+REMOTE_STAGE="${REMOTE_APP_DIR}/.deploy-staging/$(date +%Y%m%d-%H%M%S)-$$"
 TMP_DIR="$(mktemp -d)"
 # Every ssh call below reuses one connection, so a password (if any) is asked for once.
-SSH_OPTS=(-o ControlMaster=auto -o "ControlPath=${TMP_DIR}/ssh-%C" -o ControlPersist=120)
+# It outlives any build; on_exit closes it.
+SSH_OPTS=(-o ControlMaster=auto -o "ControlPath=${TMP_DIR}/ssh-%C" -o ControlPersist=30m)
 
 pause() {
     # Only pause if we have a terminal (prevents hanging in CI)
@@ -59,13 +61,15 @@ trap on_exit EXIT
 
 cd "$(dirname "$0")"
 
-frontend_env_is_set() {
-    local var=$1
-    [ -n "${!var:-}" ] && return 0
-    # The env files Vite reads for `vite build` (mode: production)
-    grep -Eqs "^[[:space:]]*${var}[[:space:]]*=[[:space:]]*[^[:space:]]" \
-        frontend/.env frontend/.env.local \
-        frontend/.env.production frontend/.env.production.local
+# Names of required VITE_* vars that resolve to empty, using Vite's own loader so
+# env file precedence, expansion and exported vars match what `vite build` sees.
+missing_frontend_env() {
+    ( cd frontend && node --input-type=module -e '
+        import { loadEnv } from "vite";
+        const env = loadEnv("production", process.cwd(), "VITE_");
+        const missing = process.argv.slice(1).filter((name) => !env[name]?.trim());
+        console.log(missing.join(" "));
+    ' "${REQUIRED_FRONTEND_ENV[@]}" )
 }
 
 # Tracked files plus new files git isn't ignoring, so caches, venvs and .env files never ship.
@@ -80,21 +84,10 @@ backend_files() {
 
 echo "== Preflight =="
 VERSION="$(git rev-parse --short HEAD)"
-if ! git diff --quiet HEAD --; then
+# Untracked (non-ignored) files count too, since they get built and shipped
+if [ -n "$(git status --porcelain)" ]; then
     VERSION="${VERSION}-dirty"
     echo "⚠️  Working tree has uncommitted changes; deploying them as ${VERSION}."
-fi
-
-missing_env=()
-for var in "${REQUIRED_FRONTEND_ENV[@]}"; do
-    if ! frontend_env_is_set "${var}"; then
-        missing_env+=("${var}")
-    fi
-done
-if [ "${#missing_env[@]}" -gt 0 ]; then
-    echo "Missing frontend build variables: ${missing_env[*]}" >&2
-    echo "Add them to frontend/.env.production.local (gitignored) or export them." >&2
-    exit 1
 fi
 
 if ! ssh "${SSH_OPTS[@]}" -o ConnectTimeout=10 "${TARGET}" true; then
@@ -104,7 +97,14 @@ fi
 
 echo " "
 echo "== Build frontend (${VERSION}) =="
-( cd frontend && npm ci && npm run build )
+( cd frontend && npm ci )
+missing_env="$(missing_frontend_env)"
+if [ -n "${missing_env}" ]; then
+    echo "Missing or empty frontend build variables: ${missing_env}" >&2
+    echo "Add them to frontend/.env.production.local (gitignored) or export them." >&2
+    exit 1
+fi
+( cd frontend && npm run build )
 echo "${VERSION} $(date '+%Y-%m-%dT%H:%M:%S%z')" > frontend/dist/version.txt
 
 echo " "
@@ -116,7 +116,7 @@ backend_files | tar --null -T - -cf - | tar -xf - -C "${STAGE}"
 
 tar -C "${STAGE}" -czf - . |
     ssh "${SSH_OPTS[@]}" "${TARGET}" \
-        "rm -rf '${REMOTE_STAGE}' && mkdir -p '${REMOTE_STAGE}' && tar -xzf - -C '${REMOTE_STAGE}'"
+        "mkdir -p '${REMOTE_STAGE}' && tar -xzf - -C '${REMOTE_STAGE}'"
 
 echo " "
 echo "== Deploy on Pi (update backend, restart + health check, swap frontend into nginx webroot) =="
@@ -126,6 +126,14 @@ set -Eeuo pipefail
 if [ -n "${DEBUG}" ]; then
     PS4='+ remote:${LINENO}: '
     set -x
+fi
+trap 'rm -rf "${REMOTE_STAGE}"' EXIT
+
+# One deploy at a time: a second one waits here instead of interleaving with the first
+exec 9> "${REMOTE_APP_DIR}/.deploy.lock"
+if ! flock -w 300 9; then
+    echo "Another deploy has held ${REMOTE_APP_DIR}/.deploy.lock for 5 minutes, giving up" >&2
+    exit 1
 fi
 
 # --- Backend code + venv/deps (.venv and .env files on the Pi are left alone) ---
@@ -183,7 +191,6 @@ sudo mv "${WEBROOT}.new" "${WEBROOT}"
 sudo nginx -t -q
 sudo systemctl reload nginx
 
-rm -rf "${REMOTE_STAGE}"
 echo "Now serving: $(cat "${WEBROOT}/version.txt")"
 ENDSSH
 

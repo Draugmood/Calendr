@@ -33,8 +33,8 @@ or `DEBUG=1 ./deploy.sh` to trace every command.
 
 ## What deploy.sh does
 
-1. Checks the frontend env vars and that the Pi is reachable
-2. Builds frontend (writes `version.txt` with the commit)
+1. Checks that the Pi is reachable
+2. Builds frontend, refusing to if a required `VITE_*` var resolves empty (writes `version.txt` with the commit)
 3. Uploads the build plus the backend files git knows about (no `.venv`, caches or `.env`)
 4. Updates backend code, and backend deps only if `requirements.txt` changed
 5. Restarts the backend and waits for it to answer through nginx
