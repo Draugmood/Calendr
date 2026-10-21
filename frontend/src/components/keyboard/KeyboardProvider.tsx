@@ -1,5 +1,6 @@
 import { KeyboardContext, type KeyboardField } from "@/contexts/KeyboardContext";
-import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { useHasNativeKeyboard } from "@/hooks/useIsMobile";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SimpleKeyboard } from "react-simple-keyboard";
 import KeyboardDock from "./KeyboardDock";
 import type { KeyboardLayoutName } from "./layouts";
@@ -13,6 +14,7 @@ function initialLayoutFor(field: KeyboardField, value: string): KeyboardLayoutNa
 }
 
 export default function KeyboardProvider({ children }: { children: ReactNode }) {
+  const isEnabled = !useHasNativeKeyboard();
   const [activeField, setActiveField] = useState<KeyboardField | null>(null);
   const [layoutName, setLayoutName] = useState<KeyboardLayoutName>("default");
   const keyboardRef = useRef<SimpleKeyboard | null>(null);
@@ -43,6 +45,19 @@ export default function KeyboardProvider({ children }: { children: ReactNode }) 
       document.activeElement.blur();
     }
   }, []);
+
+  // Crossing the breakpoint swaps keyboards under a focused field: the new dock starts
+  // with an empty buffer, or the field never registered at all. Blur it so it releases
+  // its registration (via onBlur) and its next focus registers with the current keyboard.
+  const wasEnabledRef = useRef(isEnabled);
+  useEffect(() => {
+    if (wasEnabledRef.current === isEnabled) return;
+    wasEnabledRef.current = isEnabled;
+    if (!isEnabled) keyboardRef.current = null;
+    if (document.activeElement instanceof HTMLInputElement) {
+      document.activeElement.blur();
+    }
+  }, [isEnabled]);
 
   // Called by the active input after it re-renders. A controlled value update moves the
   // DOM caret to the end, so put it back where the keyboard thinks it is. If the value
@@ -92,31 +107,37 @@ export default function KeyboardProvider({ children }: { children: ReactNode }) 
     if (input === "" && layoutName === "default") setLayoutName("shift");
   };
 
+  // Hide a field registered before a native keyboard took over until the effect drops it.
+  const activeFieldId = isEnabled ? (activeField?.id ?? null) : null;
+
   const contextValue = useMemo(
     () => ({
-      activeFieldId: activeField?.id ?? null,
+      isEnabled,
+      activeFieldId,
       register,
       scheduleUnregister,
       unregister,
       syncValue,
       close,
     }),
-    [activeField?.id, register, scheduleUnregister, unregister, syncValue, close],
+    [isEnabled, activeFieldId, register, scheduleUnregister, unregister, syncValue, close],
   );
 
   return (
     <KeyboardContext.Provider value={contextValue}>
       {children}
-      <KeyboardDock
-        isOpen={activeField !== null}
-        layoutName={layoutName}
-        enterLabel={activeField?.enterLabel ?? "Ferdig"}
-        onKeyboardReady={(keyboard) => {
-          keyboardRef.current = keyboard;
-        }}
-        onChange={handleChange}
-        onKeyPress={handleKeyPress}
-      />
+      {isEnabled && (
+        <KeyboardDock
+          isOpen={activeField !== null}
+          layoutName={layoutName}
+          enterLabel={activeField?.enterLabel ?? "Ferdig"}
+          onKeyboardReady={(keyboard) => {
+            keyboardRef.current = keyboard;
+          }}
+          onChange={handleChange}
+          onKeyPress={handleKeyPress}
+        />
+      )}
     </KeyboardContext.Provider>
   );
 }

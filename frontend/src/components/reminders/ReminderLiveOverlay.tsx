@@ -12,8 +12,8 @@ export default function ReminderLiveOverlay() {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/55 p-6">
-      <div className="w-full max-w-3xl rounded-xl border border-red-300 bg-red-50 dark:bg-zinc-900 dark:border-red-800 shadow-2xl p-6">
+    <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/55 p-4 md:p-6">
+      <div className="w-full max-w-3xl rounded-xl border border-red-300 bg-red-50 dark:bg-zinc-900 dark:border-red-800 shadow-2xl p-4 md:p-6">
         <h2 className="text-2xl font-bold text-red-800 dark:text-red-300 mb-2">
           Viktig påminnelse!
         </h2>

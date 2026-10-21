@@ -42,7 +42,7 @@ function ChoreRow({ ranked, isSuggested, now, onComplete, onEdit, onDelete }: Ch
 
   return (
     <li
-      className={`flex items-center gap-4 rounded-lg border p-3 ${
+      className={`flex items-center gap-3 md:gap-4 rounded-lg border p-3 ${
         isSuggested
           ? "border-cyan-600 bg-cyan-50 dark:bg-cyan-950/40"
           : "border-gray-600"
@@ -59,17 +59,17 @@ function ChoreRow({ ranked, isSuggested, now, onComplete, onEdit, onDelete }: Ch
       </button>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-lg font-semibold">{chore.title}</span>
+        <div className="flex items-start md:items-center gap-2">
+          <span className="min-w-0 break-words md:truncate text-lg font-semibold">{chore.title}</span>
           <span
             className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${PRIORITY_BADGE_CLASSES[chore.priority]}`}
           >
             {PRIORITY_LABELS[chore.priority]}
           </span>
         </div>
-        <div className="flex gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col md:flex-row md:gap-2 text-sm text-gray-500 dark:text-gray-400">
           <span>{formatFrequency(chore.frequency_days)}</span>
-          <span>·</span>
+          <span className="hidden md:inline">·</span>
           <span className={urgency.isOverdue ? "text-red-500" : undefined}>
             {formatDueText(urgency, now)}
           </span>
@@ -195,9 +195,9 @@ export default function ChoresPage() {
   };
 
   return (
-    <section className="w-full mt-6 flex justify-center">
-      <div className="w-full max-w-3xl border border-gray-600 rounded-lg p-4 text-left bg-white dark:bg-gray-800">
-        <div className="mb-4 flex items-center justify-between gap-4">
+    <section className="w-full mt-2 md:mt-6 flex justify-center">
+      <div className="w-full max-w-3xl border border-gray-600 rounded-lg p-3 md:p-4 text-left bg-white dark:bg-gray-800">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
             <Link
               to="/"
@@ -266,8 +266,8 @@ export default function ChoresPage() {
       )}
 
       {undoToast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-lg bg-gray-900 px-4 py-3 text-white shadow-xl dark:bg-zinc-700">
-          <span>«{undoToast.title}» fullført</span>
+        <div className="fixed bottom-6 inset-x-4 mx-auto w-fit max-w-[calc(100%-2rem)] z-40 flex items-center gap-4 rounded-lg bg-gray-900 px-4 py-3 text-white shadow-xl dark:bg-zinc-700">
+          <span className="min-w-0 truncate">«{undoToast.title}» fullført</span>
           <button
             type="button"
             onClick={() => void handleUndo()}

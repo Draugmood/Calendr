@@ -1,4 +1,5 @@
 import { CHECKLIST_CONFIG } from "@/config/checklists";
+import { useIsMobileLayout } from "@/hooks/useIsMobile";
 import { prefetchTrelloChecklist } from "@/hooks/useTrelloChecklist";
 import { prefetchTodaysWeather } from "@/hooks/useTodaysWeather";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
@@ -110,36 +111,63 @@ function Tile({
           else setEntryDirection(null);
         }}
       >
-        {tileId === "todo" && (
-          <TodoList
-            checklistId={CHECKLIST_CONFIG.TODO.id}
-            qrCodeImage={CHECKLIST_CONFIG.TODO.qrCodeImagePath}
-          />
-        )}
-        {tileId === "dinner" && (
-          <TodoList
-            checklistId={CHECKLIST_CONFIG.DINNER.id}
-            qrCodeImage={CHECKLIST_CONFIG.DINNER.qrCodeImagePath}
-          />
-        )}
-        {tileId === "weather" && <WeatherTile />}
+        <TileContent tileId={tileId} />
       </div>
     </div>
   );
 }
 
+function TileContent({ tileId }: { tileId: TileId }) {
+  return (
+    <>
+      {tileId === "todo" && (
+        <TodoList
+          checklistId={CHECKLIST_CONFIG.TODO.id}
+          qrCodeImage={CHECKLIST_CONFIG.TODO.qrCodeImagePath}
+        />
+      )}
+      {tileId === "dinner" && (
+        <TodoList
+          checklistId={CHECKLIST_CONFIG.DINNER.id}
+          qrCodeImage={CHECKLIST_CONFIG.DINNER.qrCodeImagePath}
+        />
+      )}
+      {tileId === "weather" && <WeatherTile />}
+    </>
+  );
+}
+
 export default function TaskLists() {
-  const [tileState, setTileState] = useState({
-    visible: INITIAL_VISIBLE_TILES,
-    hidden: INITIAL_HIDDEN_TILES,
-  });
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const isMobileLayout = useIsMobileLayout();
 
   useEffect(() => {
     void prefetchTrelloChecklist(CHECKLIST_CONFIG.TODO.id);
     void prefetchTrelloChecklist(CHECKLIST_CONFIG.DINNER.id);
     void prefetchTodaysWeather();
   }, []);
+
+  // A phone scrolls anyway, so stack every tile instead of rotating them by swiping.
+  if (isMobileLayout) {
+    return (
+      <div className="flex w-full flex-col">
+        {[...INITIAL_VISIBLE_TILES, ...INITIAL_HIDDEN_TILES].map((tileId) => (
+          <TileContent key={tileId} tileId={tileId} />
+        ))}
+      </div>
+    );
+  }
+
+  return <TileCarousel />;
+}
+
+// Owns the rotation state, so a swipe interrupted by switching to the phone layout
+// starts fresh when the carousel mounts again.
+function TileCarousel() {
+  const [tileState, setTileState] = useState({
+    visible: INITIAL_VISIBLE_TILES,
+    hidden: INITIAL_HIDDEN_TILES,
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   function completeTileRotation(tileId: TileId) {
     setTileState((current) => {

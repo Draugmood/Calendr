@@ -9,7 +9,7 @@ export default function WeekHeader() {
 
   return (
     <div className="grid grid-cols-3 items-center justify-items-center w-full my-4 px-12">
-      {weekNumber !== DateTime.now().weekNumber ? (
+      {!anchorDate.hasSame(DateTime.now(), "week") ? (
         <SecondaryButton label="I dag" onClick={goToToday} />
       ) : (
         <div />

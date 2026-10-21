@@ -1,16 +1,19 @@
-import { useDarkMode } from "@/hooks/useDarkMode";
 import WeekGrid from "./WeekGrid";
 import WeekHeader from "./WeekHeader";
+import WeekAgenda from "./WeekAgenda";
+import MobileWeekHeader from "./MobileWeekHeader";
+import DarkModeToggle from "./DarkModeToggle";
 import { useGoogleAuthRedirect } from "@/hooks/useGoogleAuthRedirect";
 import PrimaryButton from "../buttons/PrimaryButton";
 import { WeekProvider } from "@/contexts/WeekContext";
 import { useGoogleToken } from "@/hooks/useGoogleToken";
+import { useIsMobileLayout } from "@/hooks/useIsMobile";
 import { useEffect } from "react";
 import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 import ReminderLiveOverlay from "@/components/reminders/ReminderLiveOverlay";
 
 export default function WeekCalendar() {
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const isMobileLayout = useIsMobileLayout();
   const { redirectToGoogleAuth } = useGoogleAuthRedirect();
 
   const { accessToken, needsAuth, refresh } = useGoogleToken();
@@ -38,19 +41,14 @@ export default function WeekCalendar() {
   return (
     <WeekProvider>
       <div className="w-full">
-        <div className="w-full relative">
-          <WeekHeader />
-          <button
-            onClick={toggleDarkMode}
-            className="absolute top-0 right-4 p-2 w-10 h-10 rounded bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-            aria-label={
-              isDarkMode ? "Switch to light mode" : "Switch to dark mode"
-            }
-            title={isDarkMode ? "Light mode" : "Dark mode"}
-          >
-            {isDarkMode ? "☀️" : "🌙"}
-          </button>
-        </div>
+        {isMobileLayout ? (
+          <MobileWeekHeader trailing={<DarkModeToggle />} />
+        ) : (
+          <div className="w-full relative">
+            <WeekHeader />
+            <DarkModeToggle className="absolute top-0 right-4" />
+          </div>
+        )}
         {needsAuth && (
           <div className="my-4">
             <PrimaryButton
@@ -59,7 +57,11 @@ export default function WeekCalendar() {
             />
           </div>
         )}
-        <WeekGrid accessToken={accessToken} onAuthError={refresh} />
+        {isMobileLayout ? (
+          <WeekAgenda accessToken={accessToken} onAuthError={refresh} />
+        ) : (
+          <WeekGrid accessToken={accessToken} onAuthError={refresh} />
+        )}
         <ReminderLiveOverlay />
       </div>
     </WeekProvider>

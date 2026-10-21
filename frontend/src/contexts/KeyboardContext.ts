@@ -11,6 +11,8 @@ export interface KeyboardField {
 }
 
 interface KeyboardContextValue {
+  /** False on devices with their own on-screen keyboard; fields then use that instead. */
+  isEnabled: boolean;
   activeFieldId: string | null;
   register: (field: KeyboardField, value: string) => void;
   scheduleUnregister: (id: string) => void;

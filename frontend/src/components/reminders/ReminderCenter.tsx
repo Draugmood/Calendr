@@ -70,9 +70,9 @@ export default function ReminderCenter() {
   }
 
   return (
-    <section className="w-full mt-6 flex justify-center">
-      <div className="w-full max-w-3xl border border-gray-600 rounded-lg p-4 text-left bg-white dark:bg-gray-800">
-        <div className="mb-4 flex items-center justify-between gap-4">
+    <section className="w-full mt-2 md:mt-6 flex justify-center">
+      <div className="w-full max-w-3xl border border-gray-600 rounded-lg p-3 md:p-4 text-left bg-white dark:bg-gray-800">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
             <Link
               to="/"
