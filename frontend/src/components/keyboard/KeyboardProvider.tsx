@@ -1,4 +1,5 @@
 import { KeyboardContext, type KeyboardField } from "@/contexts/KeyboardContext";
+import { useHasNativeKeyboard } from "@/hooks/useIsMobile";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import type { SimpleKeyboard } from "react-simple-keyboard";
 import KeyboardDock from "./KeyboardDock";
@@ -13,6 +14,7 @@ function initialLayoutFor(field: KeyboardField, value: string): KeyboardLayoutNa
 }
 
 export default function KeyboardProvider({ children }: { children: ReactNode }) {
+  const isEnabled = !useHasNativeKeyboard();
   const [activeField, setActiveField] = useState<KeyboardField | null>(null);
   const [layoutName, setLayoutName] = useState<KeyboardLayoutName>("default");
   const keyboardRef = useRef<SimpleKeyboard | null>(null);
@@ -92,31 +94,37 @@ export default function KeyboardProvider({ children }: { children: ReactNode }) 
     if (input === "" && layoutName === "default") setLayoutName("shift");
   };
 
+  // A field registered before switching to a native keyboard (e.g. on resize) is dropped.
+  const activeFieldId = isEnabled ? (activeField?.id ?? null) : null;
+
   const contextValue = useMemo(
     () => ({
-      activeFieldId: activeField?.id ?? null,
+      isEnabled,
+      activeFieldId,
       register,
       scheduleUnregister,
       unregister,
       syncValue,
       close,
     }),
-    [activeField?.id, register, scheduleUnregister, unregister, syncValue, close],
+    [isEnabled, activeFieldId, register, scheduleUnregister, unregister, syncValue, close],
   );
 
   return (
     <KeyboardContext.Provider value={contextValue}>
       {children}
-      <KeyboardDock
-        isOpen={activeField !== null}
-        layoutName={layoutName}
-        enterLabel={activeField?.enterLabel ?? "Ferdig"}
-        onKeyboardReady={(keyboard) => {
-          keyboardRef.current = keyboard;
-        }}
-        onChange={handleChange}
-        onKeyPress={handleKeyPress}
-      />
+      {isEnabled && (
+        <KeyboardDock
+          isOpen={activeField !== null}
+          layoutName={layoutName}
+          enterLabel={activeField?.enterLabel ?? "Ferdig"}
+          onKeyboardReady={(keyboard) => {
+            keyboardRef.current = keyboard;
+          }}
+          onChange={handleChange}
+          onKeyPress={handleKeyPress}
+        />
+      )}
     </KeyboardContext.Provider>
   );
 }

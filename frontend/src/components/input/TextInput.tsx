@@ -27,7 +27,7 @@ export default function TextInput({
 }: Props) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { activeFieldId, register, scheduleUnregister, unregister, syncValue } =
+  const { isEnabled, activeFieldId, register, scheduleUnregister, unregister, syncValue } =
     useKeyboard();
   const isActive = activeFieldId === id;
 
@@ -52,6 +52,7 @@ export default function TextInput({
   }, [id, unregister]);
 
   const handleFocus = () => {
+    if (!isEnabled) return;
     register(
       {
         id,
@@ -75,7 +76,9 @@ export default function TextInput({
         isActive ? "border-cyan-500 outline-none" : ""
       } ${className ?? ""}`}
       type="text"
-      inputMode="none"
+      // "none" keeps the device keyboard away while the in-app one is in use.
+      inputMode={isEnabled ? "none" : layout === "numeric" ? "numeric" : "text"}
+      enterKeyHint={onEnter ? "done" : undefined}
       autoComplete="off"
       value={value}
       onChange={(event) => onChange(event.target.value)}

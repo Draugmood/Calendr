@@ -6,7 +6,7 @@ export function HomePage() {
   return (
     <>
       <AppBar />
-      <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-4  rounded-lg shadow-lg  max-w-7xl">
+      <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow-lg max-w-7xl">
         <WeekCalendar />
         <TaskLists />
       </div>

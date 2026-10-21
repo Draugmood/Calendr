@@ -52,7 +52,7 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
   return (
     <div className="mt-4">
       <div className="border border-gray-600 rounded-lg p-4 w-full max-w-md ">
-        <div className="grid grid-cols-3 justify-items-stretch items-center mb-4">
+        <div className="grid grid-cols-[1fr_auto_1fr] justify-items-stretch items-center mb-4">
           <div />
           <h2 className="text-2xl font-bold">{checklist?.name}</h2>
           {qrCodeImage ? (
@@ -63,7 +63,7 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
             <div>blæ</div>
           )}
         </div>
-        <ul className="w-full max-w-md h-64 min-w-96 space-y-2 overflow-y-auto pr-4">
+        <ul className="w-full max-w-md max-h-96 md:h-64 md:min-w-96 space-y-2 overflow-y-auto pr-4">
           {sortedItems.map((item) => (
             <li key={item.id}>
               <Checkbox

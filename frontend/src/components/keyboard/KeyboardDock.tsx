@@ -40,7 +40,11 @@ export default function KeyboardDock({
     update();
     const observer = new ResizeObserver(update);
     observer.observe(dock);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      // The dock unmounts when a native keyboard takes over; don't leave a stale gap.
+      root.style.setProperty("--osk-offset", "0px");
+    };
   }, [isOpen]);
 
   return createPortal(

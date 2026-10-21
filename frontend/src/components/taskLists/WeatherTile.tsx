@@ -67,7 +67,7 @@ export default function WeatherTile() {
   }, []);
 
   return (
-    <section className="mt-4 flex h-[346px] w-full max-w-md min-w-96 flex-col border border-gray-600 rounded-lg p-4">
+    <section className="mt-4 flex md:h-[346px] w-full max-w-md md:min-w-96 flex-col border border-gray-600 rounded-lg p-4">
       <h2 className="mb-4 text-center text-2xl font-bold">
         {showTomorrow ? "Været i morgen" : "Dagens vær"}
       </h2>

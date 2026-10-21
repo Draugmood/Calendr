@@ -118,8 +118,8 @@ export default function ReminderFormModal({ onClose, onSubmit }: Props) {
   return createPortal(
     // No backdrop click-to-close: while typing, a stray tap outside the field would
     // discard the form.
-    <div className="fixed inset-x-0 top-0 bottom-(--osk-offset) z-50 p-4 flex items-center justify-center bg-black/60">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg max-h-full overflow-y-auto text-left flex flex-col gap-5">
+    <div className="fixed inset-x-0 top-0 bottom-(--osk-offset) z-50 p-4 flex items-start md:items-center justify-center bg-black/60">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 md:p-6 w-full max-w-lg max-h-full overflow-y-auto text-left flex flex-col gap-5">
         <h2 className="text-xl font-bold">Ny påminnelse</h2>
 
         <label className="flex flex-col gap-1">

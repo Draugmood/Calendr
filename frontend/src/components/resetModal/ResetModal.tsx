@@ -57,8 +57,8 @@ export default function ResetModal({ isOpen, onClose }: Props) {
   return createPortal(
     // No backdrop click-to-close: accidental taps would wipe checklist progress.
     <div className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-xl relative">
-        <div className="p-6 pb-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 md:p-6 w-full max-w-xl relative max-h-full md:max-h-[90vh] flex flex-col">
+        <div className="p-2 md:p-6 md:pb-2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-100 flex items-center gap-2">
               <span className="material-symbols-outlined text-gray-300">
@@ -86,7 +86,7 @@ export default function ResetModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Scrollable list content */}
-        <div className="overflow-y-auto px-6 py-2 flex-1 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+        <div className="overflow-y-auto px-2 md:px-6 py-2 flex-1 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
           <ul className="flex flex-col gap-4 pb-4">
             {checklistItems.map((item, i) => (
               <li key={i}>
