@@ -139,17 +139,35 @@ function TileContent({ tileId }: { tileId: TileId }) {
 
 export default function TaskLists() {
   const isMobileLayout = useIsMobileLayout();
-  const [tileState, setTileState] = useState({
-    visible: INITIAL_VISIBLE_TILES,
-    hidden: INITIAL_HIDDEN_TILES,
-  });
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     void prefetchTrelloChecklist(CHECKLIST_CONFIG.TODO.id);
     void prefetchTrelloChecklist(CHECKLIST_CONFIG.DINNER.id);
     void prefetchTodaysWeather();
   }, []);
+
+  // A phone scrolls anyway, so stack every tile instead of rotating them by swiping.
+  if (isMobileLayout) {
+    return (
+      <div className="flex w-full flex-col">
+        {[...INITIAL_VISIBLE_TILES, ...INITIAL_HIDDEN_TILES].map((tileId) => (
+          <TileContent key={tileId} tileId={tileId} />
+        ))}
+      </div>
+    );
+  }
+
+  return <TileCarousel />;
+}
+
+// Owns the rotation state, so a swipe interrupted by switching to the phone layout
+// starts fresh when the carousel mounts again.
+function TileCarousel() {
+  const [tileState, setTileState] = useState({
+    visible: INITIAL_VISIBLE_TILES,
+    hidden: INITIAL_HIDDEN_TILES,
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   function completeTileRotation(tileId: TileId) {
     setTileState((current) => {
@@ -164,17 +182,6 @@ export default function TaskLists() {
       };
     });
     setIsTransitioning(false);
-  }
-
-  // A phone scrolls anyway, so stack every tile instead of rotating them by swiping.
-  if (isMobileLayout) {
-    return (
-      <div className="flex w-full flex-col">
-        {[...INITIAL_VISIBLE_TILES, ...INITIAL_HIDDEN_TILES].map((tileId) => (
-          <TileContent key={tileId} tileId={tileId} />
-        ))}
-      </div>
-    );
   }
 
   return (

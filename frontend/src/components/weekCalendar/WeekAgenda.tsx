@@ -21,7 +21,7 @@ function coversDay(event: CalendarEvent, date: DateTime): boolean {
 /** The phone layout of the week: one list of events per day instead of a time grid. */
 export default function WeekAgenda({ accessToken, onAuthError }: Props) {
   const { datesInWeek } = useWeek();
-  const { events, isLoading } = useGoogleCalendarEvents(
+  const { events, errorMessage, isLoading } = useGoogleCalendarEvents(
     accessToken,
     datesInWeek[0],
     onAuthError,
@@ -33,6 +33,10 @@ export default function WeekAgenda({ accessToken, onAuthError }: Props) {
 
   if (isLoading) {
     return <p className="py-8 text-center">Henter avtaler...</p>;
+  }
+  // Otherwise a failed request would read as a week without any appointments.
+  if (errorMessage) {
+    return <p className="py-8 text-center text-red-500">Kunne ikke hente avtaler.</p>;
   }
 
   const today = DateTime.now();

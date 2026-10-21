@@ -17,7 +17,7 @@ export default function MobileWeekHeader({ trailing }: Props) {
 
   return (
     <div className="my-3 flex w-full items-center justify-between gap-2">
-      {weekNumber !== DateTime.now().weekNumber ? (
+      {!anchorDate.hasSame(DateTime.now(), "week") ? (
         <button
           type="button"
           onClick={goToToday}
