@@ -19,7 +19,9 @@ REQUIRED_FRONTEND_ENV=(VITE_GOOGLE_CLIENT_ID VITE_TRELLO_KEY VITE_TRELLO_TOKEN)
 TARGET="${PI_USER}@${PI_HOST}"
 # Unique per run, so overlapping deploys never share (or delete) each other's upload
 REMOTE_STAGE="${REMOTE_APP_DIR}/.deploy-staging/$(date +%Y%m%d-%H%M%S)-$$"
-TMP_DIR="$(mktemp -d)"
+# Short fixed parent: the SSH control socket inside must fit the ~104 char Unix socket limit,
+# which a long $TMPDIR (e.g. macOS) would blow past
+TMP_DIR="$(mktemp -d /tmp/calendr-deploy.XXXXXX)"
 # Every ssh call below reuses one connection, so a password (if any) is asked for once.
 # It outlives any build; on_exit closes it.
 SSH_OPTS=(-o ControlMaster=auto -o "ControlPath=${TMP_DIR}/ssh-%C" -o ControlPersist=30m)

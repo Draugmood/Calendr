@@ -54,7 +54,7 @@ Redeploy an older commit (`git checkout <sha> && ./deploy.sh`), or swap the
 previous frontend back in:
 
 ```bash
-ssh tavla 'sudo mv /var/www/html /var/www/html.bad && sudo mv /var/www/html.old /var/www/html'
+ssh draugmood@tavla 'sudo mv /var/www/html /var/www/html.bad && sudo mv /var/www/html.old /var/www/html'
 ```
 
 ## If something breaks
@@ -62,13 +62,13 @@ ssh tavla 'sudo mv /var/www/html /var/www/html.bad && sudo mv /var/www/html.old 
 Backend logs:
 
 ```bash
-ssh tavla sudo journalctl -u calendr-backend -n 100
+ssh draugmood@tavla sudo journalctl -u calendr-backend -n 100
 ```
 
 nginx:
 
 ```bash
-ssh tavla 'sudo nginx -t && sudo tail -n 100 /var/log/nginx/error.log'
+ssh draugmood@tavla 'sudo nginx -t && sudo tail -n 100 /var/log/nginx/error.log'
 ```
 
 ## Notes (don’t forget)
