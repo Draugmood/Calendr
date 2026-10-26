@@ -21,11 +21,11 @@ export default function MorningRoutineButton({ onDrawerClose }: Props) {
         <button
           onClick={handleClick}
           className="text-xl flex gap-2 items-center cursor-pointer"
-          aria-label="Open morning routine modal"
-          title="Morning routine"
+          aria-label="Åpne morgenrutine"
+          title="Morgenrutine"
         >
           <span className="material-symbols-outlined">routine</span>
-          Morning routine
+          Morgenrutine
         </button>
       </div>
       <MorningRoutineModal isOpen={isOpen} onClose={() => setIsOpen(false)} />

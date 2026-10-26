@@ -13,8 +13,8 @@ export default function QrCodeButton({ qrCodeImage }: Props) {
       <button
         onClick={() => setIsOpen(true)}
         className="p-2 w-10 h-10 rounded flex items-center justify-center bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-        aria-label={"Show QR code to access this checklist on your phone"}
-        title={"QR Code"}
+        aria-label={"Vis QR-kode for å åpne listen på telefonen"}
+        title={"QR-kode"}
       >
         <QrCodeIcon />
       </button>
@@ -25,7 +25,7 @@ export default function QrCodeButton({ qrCodeImage }: Props) {
         >
           <img
             src={qrCodeImage}
-            alt="QR Code"
+            alt="QR-kode"
             className="max-w-xs max-h-full rounded-lg shadow-lg"
           />
         </div>

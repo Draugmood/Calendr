@@ -60,7 +60,7 @@ export default function TodoList({ checklistId, qrCodeImage }: Props) {
               <QrCodeButton qrCodeImage={qrCodeImage} />
             </div>
           ) : (
-            <div>blæ</div>
+            <div />
           )}
         </div>
         <ul className="w-full max-w-md max-h-96 md:h-64 md:min-w-96 space-y-2 overflow-y-auto pr-4">
