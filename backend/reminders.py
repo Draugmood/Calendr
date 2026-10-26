@@ -17,13 +17,13 @@ VALID_SNOOZE_MINUTES = {5, 10, 30}
 VALID_RRULE_FREQUENCIES = {"DAILY", "WEEKLY", "MONTHLY", "YEARLY"}
 WEEKDAY_TOKENS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
 WEEKDAY_LABELS = {
-    "MO": "Monday",
-    "TU": "Tuesday",
-    "WE": "Wednesday",
-    "TH": "Thursday",
-    "FR": "Friday",
-    "SA": "Saturday",
-    "SU": "Sunday",
+    "MO": "mandag",
+    "TU": "tirsdag",
+    "WE": "onsdag",
+    "TH": "torsdag",
+    "FR": "fredag",
+    "SA": "lørdag",
+    "SU": "søndag",
 }
 
 
@@ -299,6 +299,12 @@ def get_next_recurring_due_at(reminder_row: sqlite3.Row) -> Optional[str]:
     return format_utc(next_due)
 
 
+def join_norwegian(items: list[str]) -> str:
+    if len(items) <= 1:
+        return "".join(items)
+    return f"{', '.join(items[:-1])} og {items[-1]}"
+
+
 def format_recurrence_text(recurrence_rule: Optional[str]) -> Optional[str]:
     if not recurrence_rule:
         return None
@@ -315,8 +321,8 @@ def format_recurrence_text(recurrence_rule: Optional[str]) -> Optional[str]:
         days = parts.get("BYDAY")
         if not days:
             return "Gjentas ukentlig"
-        labels = [WEEKDAY_LABELS.get(day, day) for day in days.split(",")]
-        return f"Gjentas ukentlig på {', '.join(labels)}er"
+        labels = [f"{WEEKDAY_LABELS.get(day, day)}er" for day in days.split(",")]
+        return f"Gjentas ukentlig på {join_norwegian(labels)}"
     if frequency == "MONTHLY":
         date = parts.get("BYMONTHDAY")
         if date:

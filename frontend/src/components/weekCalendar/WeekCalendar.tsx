@@ -53,7 +53,7 @@ export default function WeekCalendar() {
           <div className="my-4">
             <PrimaryButton
               onClick={redirectToGoogleAuth}
-              label="Authorize with Google Calendar"
+              label="Koble til Google Kalender"
             />
           </div>
         )}

@@ -126,7 +126,7 @@ export default function MorningRoutineModal({ isOpen, onClose }: Props) {
               <span className="material-symbols-outlined text-gray-300">
                 routine
               </span>
-              Morning routine
+              Morgenrutine
             </h2>
             <button
               onClick={() =>
@@ -135,10 +135,10 @@ export default function MorningRoutineModal({ isOpen, onClose }: Props) {
               className="w-10 h-10 shrink-0 rounded-full bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors flex items-center justify-center"
               aria-label={
                 view === "kids"
-                  ? "Switch to everyone view"
-                  : "Switch to kids view"
+                  ? "Vis alle"
+                  : "Vis barna"
               }
-              title={view === "kids" ? "Everyone" : "Kids"}
+              title={view === "kids" ? "Alle" : "Barna"}
             >
               <span className="material-symbols-outlined">
                 {view === "kids" ? "group" : "child_care"}

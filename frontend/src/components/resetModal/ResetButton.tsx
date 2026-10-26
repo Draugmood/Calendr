@@ -21,11 +21,11 @@ export default function ResetButton({ onDrawerClose }: Props) {
         <button
           onClick={handleClick}
           className="text-xl flex gap-2 items-center cursor-pointer"
-          aria-label="Open reset modal"
-          title="Reset"
+          aria-label="Åpne kveldsrydding"
+          title="Kveldsrydding"
         >
           <span className="material-symbols-outlined">replay</span>
-          Reset
+          Kveldsrydding
         </button>
       </div>
       <ResetModal isOpen={isOpen} onClose={() => setIsOpen(false)} />

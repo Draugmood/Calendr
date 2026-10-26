@@ -1,29 +1,38 @@
 import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
 import { useEffect, useState } from "react";
 
+interface WeatherPeriodDetails {
+  precipitation_amount?: number;
+  probability_of_precipitation?: number;
+  air_temperature_min?: number;
+  air_temperature_max?: number;
+}
+
+interface WeatherPeriodForecast {
+  summary: {
+    symbol_code: string;
+  };
+  details?: WeatherPeriodDetails;
+}
+
 export interface WeatherForecastTimeStep {
   time: string;
   data: {
     instant: {
       details: {
         air_temperature: number;
+        wind_speed?: number;
+        wind_from_direction?: number;
+        wind_speed_of_gust?: number;
+        relative_humidity?: number;
+        cloud_area_fraction?: number;
+        air_pressure_at_sea_level?: number;
+        ultraviolet_index_clear_sky?: number;
       };
     };
-    next_1_hours?: {
-      summary: {
-        symbol_code: string;
-      };
-    };
-    next_6_hours?: {
-      summary: {
-        symbol_code: string;
-      };
-    };
-    next_12_hours?: {
-      summary: {
-        symbol_code: string;
-      };
-    };
+    next_1_hours?: WeatherPeriodForecast;
+    next_6_hours?: WeatherPeriodForecast;
+    next_12_hours?: WeatherPeriodForecast;
   };
 }
 
