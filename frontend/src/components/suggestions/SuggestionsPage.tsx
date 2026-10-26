@@ -94,6 +94,7 @@ export default function SuggestionsPage() {
     suggestions,
     isLoading,
     errorMessage,
+    refreshSuggestions,
     createSuggestion,
     setSuggestionDone,
     deleteSuggestion,
@@ -114,15 +115,18 @@ export default function SuggestionsPage() {
   };
 
   const handleSubmit = async () => {
-    const text = draft.trim();
-    if (!text || isSaving) return;
+    const submitted = draft;
+    const text = submitted.trim();
+    // Saving while the list is still loading would let the load response overwrite it.
+    if (!text || isSaving || isLoading) return;
     setIsSaving(true);
     const succeeded = await runAction(
       () => createSuggestion(text),
       "Kunne ikke lagre forslaget.",
     );
     setIsSaving(false);
-    if (succeeded) setDraft("");
+    // Keep anything typed while the request was in flight.
+    if (succeeded) setDraft((current) => (current === submitted ? "" : current));
   };
 
   return (
@@ -152,7 +156,7 @@ export default function SuggestionsPage() {
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={!draft.trim() || isSaving}
+            disabled={!draft.trim() || isSaving || isLoading}
             className="flex shrink-0 items-center gap-1 rounded-lg bg-cyan-600 px-4 py-2 font-medium text-stone-950 cursor-pointer hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined">add</span>
@@ -164,7 +168,17 @@ export default function SuggestionsPage() {
 
         {isLoading && <p className="py-8 text-center">Henter forslag...</p>}
         {!isLoading && errorMessage && (
-          <p className="py-8 text-center text-red-500">Kunne ikke hente forslag.</p>
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-red-500">Kunne ikke hente forslag.</p>
+            <button
+              type="button"
+              onClick={() => void refreshSuggestions()}
+              className="flex items-center gap-1 rounded-lg border border-gray-400 px-4 py-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700"
+            >
+              <span className="material-symbols-outlined">refresh</span>
+              Prøv igjen
+            </button>
+          </div>
         )}
         {!isLoading && !errorMessage && suggestions.length === 0 && (
           <p className="py-8 text-center text-gray-500 dark:text-gray-400">

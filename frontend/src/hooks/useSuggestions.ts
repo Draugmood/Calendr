@@ -41,6 +41,7 @@ export function useSuggestions() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const refreshSuggestions = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await fetchWithTimeout(SUGGESTIONS_BASE_URL);
       setSuggestions(await readJsonOrThrow<Suggestion[]>(response));
@@ -85,6 +86,7 @@ export function useSuggestions() {
     suggestions,
     isLoading,
     errorMessage,
+    refreshSuggestions,
     createSuggestion,
     setSuggestionDone,
     deleteSuggestion,
