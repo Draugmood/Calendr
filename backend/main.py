@@ -1,5 +1,6 @@
 from reminders import router as reminders_router
 from chores import router as chores_router
+from suggestions import router as suggestions_router
 from db import get_db, init_db
 import httpx
 import json
@@ -363,6 +364,7 @@ async def get_google_access_token():
 
 app.include_router(reminders_router)
 app.include_router(chores_router)
+app.include_router(suggestions_router)
 
 
 if __name__ == "__main__":

@@ -143,6 +143,13 @@ def init_db():
 
         CREATE INDEX IF NOT EXISTS idx_chore_completions_chore
             ON chore_completions(chore_id, completed_at_utc);
+
+        CREATE TABLE IF NOT EXISTS suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text TEXT NOT NULL,
+            done BOOLEAN NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
     """)
 
     ensure_column(cursor, "reminders", "timezone", "TEXT")
