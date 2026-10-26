@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/HomePage";
 import ReminderCenter from "./components/reminders/ReminderCenter";
 import ChoresPage from "./components/chores/ChoresPage";
+import SuggestionsPage from "./components/suggestions/SuggestionsPage";
 import KeyboardProvider from "./components/keyboard/KeyboardProvider";
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/reminders" element={<ReminderCenter />} />
           <Route path="/chores" element={<ChoresPage />} />
+          <Route path="/suggestions" element={<SuggestionsPage />} />
         </Routes>
       </div>
     </KeyboardProvider>
