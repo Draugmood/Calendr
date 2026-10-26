@@ -122,19 +122,19 @@ html[data-season="easter"] {
   --accent-950: #422006;
 }
 
-/* Only cyan becomes flag red here; blue is already the flag's other color. */
+/* Flag red. Only cyan takes it; blue is already the flag's other color. */
 html[data-season="constitutionDay"] {
-  --color-cyan-50: #fef2f2;
-  --color-cyan-100: #fee2e2;
-  --color-cyan-200: #fecaca;
-  --color-cyan-300: #fca5a5;
-  --color-cyan-400: #f87171;
-  --color-cyan-500: #e11d48;
-  --color-cyan-600: #ba0c2f;
-  --color-cyan-700: #9f1239;
-  --color-cyan-800: #881337;
-  --color-cyan-900: #6d0f2a;
-  --color-cyan-950: #4c0519;
+  --accent-50: #fef2f2;
+  --accent-100: #fee2e2;
+  --accent-200: #fecaca;
+  --accent-300: #fca5a5;
+  --accent-400: #f87171;
+  --accent-500: #ef4444;
+  --accent-600: #ba0c2f;
+  --accent-700: #9f1239;
+  --accent-800: #881337;
+  --accent-900: #6d0f2a;
+  --accent-950: #4c0519;
 }
 
 html:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"]) {
@@ -175,22 +175,37 @@ html:is([data-season="halloween"], [data-season="christmas"], [data-season="newY
   --color-slate-950: var(--tint-950);
 }
 
-html:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"]) {
+/*
+ * Accents are mapped by role rather than shade for shade, so contrast holds:
+ * - cyan-600/500 are filled controls with dark (stone-950) labels, so they take the lighter 500/400.
+ * - cyan-700 is text on white in light mode; cyan-400 is text on dark panels.
+ */
+html:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"], [data-season="constitutionDay"]) {
   --color-cyan-50: var(--accent-50);
   --color-cyan-100: var(--accent-100);
   --color-cyan-200: var(--accent-200);
   --color-cyan-300: var(--accent-300);
   --color-cyan-400: var(--accent-400);
-  --color-cyan-500: var(--accent-500);
-  --color-cyan-600: var(--accent-600);
+  --color-cyan-500: var(--accent-400);
+  --color-cyan-600: var(--accent-500);
   --color-cyan-700: var(--accent-700);
   --color-cyan-800: var(--accent-800);
   --color-cyan-900: var(--accent-900);
   --color-cyan-950: var(--accent-950);
+}
 
-  /* blue-500/600 are UI accents (today, buttons); blue-400 is an event color and stays put. */
-  --color-blue-500: var(--accent-500);
-  --color-blue-600: var(--accent-600);
+/*
+ * blue-500/600 are UI accents; blue-400 is an event color and stays put.
+ * Light mode uses them as white-icon buttons and today's text on white, so they go dark.
+ * Dark mode only uses blue-500 as today's text on dark panels, so it goes light.
+ */
+html:not(.dark):is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"]) {
+  --color-blue-500: var(--accent-700);
+  --color-blue-600: var(--accent-800);
+}
+
+html.dark:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"]) {
+  --color-blue-500: var(--accent-400);
 }
 
 /* A low pumpkin glow behind everything. */
