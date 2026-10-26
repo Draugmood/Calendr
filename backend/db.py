@@ -118,6 +118,12 @@ def init_db():
         );
 
         CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminders(status);
+
+        CREATE TABLE IF NOT EXISTS weather_timesteps (
+            time_utc TEXT PRIMARY KEY,
+            data_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
         CREATE INDEX IF NOT EXISTS idx_reminders_due_at ON reminders(due_at_utc);
         CREATE INDEX IF NOT EXISTS idx_reminders_snoozed_until ON reminders(snoozed_until_utc);
 
