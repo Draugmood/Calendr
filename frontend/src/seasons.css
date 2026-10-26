@@ -1,0 +1,332 @@
+/*
+ * Seasonal themes. SeasonContext sets <html data-season="...">; each season below
+ * can provide a neutral tint (--tint-*) and/or an accent (--accent-*), which are
+ * mapped onto Tailwind's color variables so every component picks them up.
+ */
+
+html[data-season="halloween"] {
+  --tint-50: #faf7fc;
+  --tint-100: #f2ecf6;
+  --tint-200: #e4d9ec;
+  --tint-300: #cbbad8;
+  --tint-400: #a48db8;
+  --tint-500: #7a6390;
+  --tint-600: #574369;
+  --tint-700: #3b2b4a;
+  --tint-800: #261a32;
+  --tint-900: #180f21;
+  --tint-950: #0e0815;
+
+  --accent-50: #fff7ed;
+  --accent-100: #ffedd5;
+  --accent-200: #fed7aa;
+  --accent-300: #fdba74;
+  --accent-400: #fb923c;
+  --accent-500: #f97316;
+  --accent-600: #ea580c;
+  --accent-700: #c2410c;
+  --accent-800: #9a3412;
+  --accent-900: #7c2d12;
+  --accent-950: #431407;
+}
+
+html[data-season="christmas"] {
+  --tint-50: #f6faf7;
+  --tint-100: #e9f2ec;
+  --tint-200: #d2e3d8;
+  --tint-300: #afc9b8;
+  --tint-400: #7fa18b;
+  --tint-500: #5a7b66;
+  --tint-600: #43604d;
+  --tint-700: #2e4637;
+  --tint-800: #1d3025;
+  --tint-900: #122019;
+  --tint-950: #0a140f;
+
+  --accent-50: #fef2f2;
+  --accent-100: #fee2e2;
+  --accent-200: #fecaca;
+  --accent-300: #fca5a5;
+  --accent-400: #f87171;
+  --accent-500: #ef4444;
+  --accent-600: #dc2626;
+  --accent-700: #b91c1c;
+  --accent-800: #991b1b;
+  --accent-900: #7f1d1d;
+  --accent-950: #450a0a;
+}
+
+html[data-season="newYear"] {
+  --tint-50: #f7f8fc;
+  --tint-100: #eceff8;
+  --tint-200: #d7dcef;
+  --tint-300: #b5bddf;
+  --tint-400: #8a93c2;
+  --tint-500: #646d9e;
+  --tint-600: #4a527f;
+  --tint-700: #333960;
+  --tint-800: #20253f;
+  --tint-900: #13172b;
+  --tint-950: #0a0c1a;
+
+  --accent-50: #fffbeb;
+  --accent-100: #fef3c7;
+  --accent-200: #fde68a;
+  --accent-300: #fcd34d;
+  --accent-400: #fbbf24;
+  --accent-500: #f59e0b;
+  --accent-600: #d97706;
+  --accent-700: #b45309;
+  --accent-800: #92400e;
+  --accent-900: #78350f;
+  --accent-950: #451a03;
+}
+
+html[data-season="valentines"] {
+  --tint-50: #fcf7f9;
+  --tint-100: #f6ebf0;
+  --tint-200: #ecd6e0;
+  --tint-300: #d9b4c4;
+  --tint-400: #b8899d;
+  --tint-500: #8f6477;
+  --tint-600: #6d4a5a;
+  --tint-700: #4c3340;
+  --tint-800: #32212a;
+  --tint-900: #21151b;
+  --tint-950: #140c10;
+
+  --accent-50: #fdf2f8;
+  --accent-100: #fce7f3;
+  --accent-200: #fbcfe8;
+  --accent-300: #f9a8d4;
+  --accent-400: #f472b6;
+  --accent-500: #ec4899;
+  --accent-600: #db2777;
+  --accent-700: #be185d;
+  --accent-800: #9d174d;
+  --accent-900: #831843;
+  --accent-950: #500724;
+}
+
+html[data-season="easter"] {
+  --accent-50: #fefce8;
+  --accent-100: #fef9c3;
+  --accent-200: #fef08a;
+  --accent-300: #fde047;
+  --accent-400: #facc15;
+  --accent-500: #eab308;
+  --accent-600: #ca8a04;
+  --accent-700: #a16207;
+  --accent-800: #854d0e;
+  --accent-900: #713f12;
+  --accent-950: #422006;
+}
+
+/* Flag red. Only cyan takes it; blue is already the flag's other color. */
+html[data-season="constitutionDay"] {
+  --accent-50: #fef2f2;
+  --accent-100: #fee2e2;
+  --accent-200: #fecaca;
+  --accent-300: #fca5a5;
+  --accent-400: #f87171;
+  --accent-500: #ef4444;
+  --accent-600: #ba0c2f;
+  --accent-700: #9f1239;
+  --accent-800: #881337;
+  --accent-900: #6d0f2a;
+  --accent-950: #4c0519;
+}
+
+html:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"]) {
+  --color-gray-50: var(--tint-50);
+  --color-gray-100: var(--tint-100);
+  --color-gray-200: var(--tint-200);
+  --color-gray-300: var(--tint-300);
+  --color-gray-400: var(--tint-400);
+  --color-gray-500: var(--tint-500);
+  --color-gray-600: var(--tint-600);
+  --color-gray-700: var(--tint-700);
+  --color-gray-800: var(--tint-800);
+  --color-gray-900: var(--tint-900);
+  --color-gray-950: var(--tint-950);
+
+  --color-zinc-50: var(--tint-50);
+  --color-zinc-100: var(--tint-100);
+  --color-zinc-200: var(--tint-200);
+  --color-zinc-300: var(--tint-300);
+  --color-zinc-400: var(--tint-400);
+  --color-zinc-500: var(--tint-500);
+  --color-zinc-600: var(--tint-600);
+  --color-zinc-700: var(--tint-700);
+  --color-zinc-800: var(--tint-800);
+  --color-zinc-900: var(--tint-900);
+  --color-zinc-950: var(--tint-950);
+
+  --color-slate-50: var(--tint-50);
+  --color-slate-100: var(--tint-100);
+  --color-slate-200: var(--tint-200);
+  --color-slate-300: var(--tint-300);
+  --color-slate-400: var(--tint-400);
+  --color-slate-500: var(--tint-500);
+  --color-slate-600: var(--tint-600);
+  --color-slate-700: var(--tint-700);
+  --color-slate-800: var(--tint-800);
+  --color-slate-900: var(--tint-900);
+  --color-slate-950: var(--tint-950);
+}
+
+/*
+ * Accents are mapped by role rather than shade for shade, so contrast holds:
+ * - cyan-600/500 are filled controls with dark (stone-950) labels, so they take the lighter 500/400.
+ * - cyan-700 is text on white in light mode; cyan-400 is text on dark panels.
+ */
+html:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"], [data-season="constitutionDay"]) {
+  --color-cyan-50: var(--accent-50);
+  --color-cyan-100: var(--accent-100);
+  --color-cyan-200: var(--accent-200);
+  --color-cyan-300: var(--accent-300);
+  --color-cyan-400: var(--accent-400);
+  --color-cyan-500: var(--accent-400);
+  --color-cyan-600: var(--accent-500);
+  --color-cyan-700: var(--accent-700);
+  --color-cyan-800: var(--accent-800);
+  --color-cyan-900: var(--accent-900);
+  --color-cyan-950: var(--accent-950);
+}
+
+/*
+ * blue-500/600 are UI accents; blue-400 is an event color and stays put.
+ * Light mode uses them as white-icon buttons and today's text on white, so they go dark.
+ * Dark mode only uses blue-500 as today's text on dark panels, so it goes light.
+ */
+html:not(.dark):is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"]) {
+  --color-blue-500: var(--accent-700);
+  --color-blue-600: var(--accent-800);
+}
+
+html.dark:is([data-season="halloween"], [data-season="christmas"], [data-season="newYear"], [data-season="valentines"], [data-season="easter"]) {
+  --color-blue-500: var(--accent-400);
+}
+
+/* A low pumpkin glow behind everything. */
+html.dark[data-season="halloween"] body {
+  background:
+    radial-gradient(ellipse 120% 40% at 50% 100%, rgb(234 88 12 / 0.18), transparent 70%),
+    var(--color-gray-950);
+  background-attachment: fixed;
+}
+
+html[data-season="halloween"] .season-title {
+  text-shadow: 0 0 12px rgb(249 115 22 / 0.7);
+}
+
+html[data-season="christmas"] .season-title {
+  text-shadow: 0 0 12px rgb(255 255 255 / 0.45);
+}
+
+/* Decorations */
+
+.season-fly {
+  transform: translateX(-20vw);
+  animation: season-fly var(--season-duration) linear var(--season-delay) infinite;
+  will-change: transform;
+}
+
+/* Cross during the first part of the cycle, then wait off-screen. */
+@keyframes season-fly {
+  0% { transform: translateX(-20vw); }
+  45%, 100% { transform: translateX(110vw); }
+}
+
+.season-bob {
+  animation: season-bob 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes season-bob {
+  from { transform: translateY(-14px) rotate(-4deg); }
+  to { transform: translateY(14px) rotate(4deg); }
+}
+
+.season-dangle {
+  animation: season-dangle 9s ease-in-out infinite alternate;
+}
+
+@keyframes season-dangle {
+  from { transform: translateY(-110px); }
+  to { transform: translateY(20px); }
+}
+
+.season-glow {
+  filter: drop-shadow(0 0 10px rgb(251 146 60 / 0.75));
+}
+
+/* Rim light so dark bats and spiders read against the dark theme. */
+.season-rim {
+  filter: drop-shadow(0 0 4px rgb(253 186 116 / 0.55));
+}
+
+.season-fall,
+.season-rise {
+  top: 0;
+  will-change: transform;
+}
+
+.season-fall {
+  animation: season-fall var(--season-duration) linear var(--season-delay) infinite;
+}
+
+@keyframes season-fall {
+  0% { transform: translate(0, -5vh); }
+  50% { transform: translate(var(--season-sway), 50vh); }
+  100% { transform: translate(0, 105vh); }
+}
+
+.season-rise {
+  animation: season-rise var(--season-duration) ease-in var(--season-delay) infinite;
+}
+
+@keyframes season-rise {
+  0% { transform: translate(0, 105vh); opacity: 0; }
+  10% { opacity: 0.8; }
+  50% { transform: translate(var(--season-sway), 50vh); }
+  90% { opacity: 0.8; }
+  100% { transform: translate(0, -5vh); opacity: 0; }
+}
+
+.season-twinkle {
+  animation: season-twinkle 4s ease-in-out var(--season-delay) infinite alternate;
+}
+
+@keyframes season-twinkle {
+  from { opacity: 0.15; transform: scale(0.8); }
+  to { opacity: 0.9; transform: scale(1.1); }
+}
+
+.season-spin {
+  animation: season-spin 2.4s linear infinite;
+}
+
+@keyframes season-spin {
+  to { transform: rotate3d(1, 0.4, 0.2, 360deg); }
+}
+
+.season-wave {
+  animation: season-wave 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes season-wave {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seasonal-decorations * {
+    animation: none !important;
+  }
+
+  .season-fly,
+  .season-fall,
+  .season-rise {
+    display: none;
+  }
+}
