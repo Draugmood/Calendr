@@ -1,73 +1,41 @@
-import {
-  type WeatherForecastTimeStep,
-  useTodaysWeather,
-} from "@/hooks/useTodaysWeather";
-import { DateTime } from "luxon";
+import { useTodaysWeather } from "@/hooks/useTodaysWeather";
 import { useEffect, useState } from "react";
+import PeriodForecasts from "../weather/PeriodForecasts";
+import WeatherDetailsModal from "../weather/WeatherDetailsModal";
+import { nowInWeatherZone } from "../weather/weatherUtils";
 
-const PERIODS = [
-  { label: "Morgen", hour: 8 },
-  { label: "Dag", hour: 13 },
-  { label: "Kveld", hour: 19 },
-] as const;
 const TOMORROW_FORECAST_CUTOFF_HOUR = 19;
-const WEATHER_ICON_BASE_URL =
-  "https://cdn.jsdelivr.net/gh/metno/weathericons@latest/weather/svg";
-
-function getSymbolCode(forecast?: WeatherForecastTimeStep): string {
-  return (
-    forecast?.data.next_1_hours?.summary.symbol_code ??
-    forecast?.data.next_6_hours?.summary.symbol_code ??
-    forecast?.data.next_12_hours?.summary.symbol_code ??
-    "cloudy"
-  );
-}
-
-function WeatherIcon({ symbolCode }: { symbolCode: string }) {
-  return (
-    <img
-      src={`${WEATHER_ICON_BASE_URL}/${symbolCode}.svg`}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-      className="h-16 w-16 select-none object-contain"
-    />
-  );
-}
-
-function closestForecast(
-  timeSteps: WeatherForecastTimeStep[],
-  target: DateTime,
-): WeatherForecastTimeStep | undefined {
-  return timeSteps.reduce<WeatherForecastTimeStep | undefined>((closest, step) => {
-    if (!closest) return step;
-
-    const difference = Math.abs(DateTime.fromISO(step.time).diff(target).as("hours"));
-    const closestDifference = Math.abs(
-      DateTime.fromISO(closest.time).diff(target).as("hours"),
-    );
-    return difference < closestDifference ? step : closest;
-  }, undefined);
-}
 
 export default function WeatherTile() {
   const { timeSteps, errorMessage, isLoading } = useTodaysWeather();
-  const [now, setNow] = useState(() => DateTime.now().setZone("Europe/Oslo"));
+  const [now, setNow] = useState(nowInWeatherZone);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const showTomorrow = now.hour >= TOMORROW_FORECAST_CUTOFF_HOUR;
   const forecastDate = (showTomorrow ? now.plus({ days: 1 }) : now).startOf(
     "day",
   );
+  const hasForecast = !isLoading && !errorMessage;
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      setNow(DateTime.now().setZone("Europe/Oslo"));
+      setNow(nowInWeatherZone());
     }, 60 * 1000);
 
     return () => window.clearInterval(intervalId);
   }, []);
 
   return (
-    <section className="mt-4 flex md:h-[346px] w-full max-w-md md:min-w-96 flex-col border border-gray-600 rounded-lg p-4">
+    <section className="relative mt-4 flex md:h-[346px] w-full max-w-md md:min-w-96 flex-col border border-gray-600 rounded-lg p-4">
+      {hasForecast && (
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="absolute right-3 top-3 w-8 h-8 rounded-full bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors flex items-center justify-center"
+          aria-label="Vis detaljert værvarsel"
+          title="Detaljer"
+        >
+          <span className="material-symbols-outlined text-xl">open_in_full</span>
+        </button>
+      )}
       <h2 className="mb-4 text-center text-2xl font-bold">
         {showTomorrow ? "Været i morgen" : "Dagens vær"}
       </h2>
@@ -84,27 +52,15 @@ export default function WeatherTile() {
           Kunne ikke hente værvarsel.
         </p>
       )}
-      {!isLoading && !errorMessage && (
-        <div className="grid min-h-0 flex-1 grid-cols-3 divide-x divide-gray-600">
-          {PERIODS.map((period) => {
-            const forecast = closestForecast(
-              timeSteps,
-              forecastDate.set({ hour: period.hour }),
-            );
-            const temperature = forecast?.data.instant.details.air_temperature;
-            const symbolCode = getSymbolCode(forecast);
-
-            return (
-              <div key={period.label} className="flex flex-col items-center justify-center gap-3">
-                <span className="font-semibold">{period.label}</span>
-                <WeatherIcon symbolCode={symbolCode} />
-                <span className="text-2xl font-bold">
-                  {temperature === undefined ? "-" : `${Math.round(temperature)}°`}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      {hasForecast && (
+        <PeriodForecasts timeSteps={timeSteps} date={forecastDate} />
+      )}
+      {isModalOpen && (
+        <WeatherDetailsModal
+          onClose={() => setIsModalOpen(false)}
+          initialDayOffset={showTomorrow ? 1 : 0}
+          timeSteps={timeSteps}
+        />
       )}
     </section>
   );

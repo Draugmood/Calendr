@@ -2,10 +2,12 @@ from reminders import router as reminders_router
 from chores import router as chores_router
 from db import get_db, init_db
 import httpx
+import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,6 +38,7 @@ _access_token_cache: dict[str, Any] = {"token": None, "expires_at": 0.0}
 MET_NORWAY_USER_AGENT = "Calendr/1.0 (https://github.com/Draugmood/Calendr)"
 TOLINES_VEI_LATITUDE = 59.267
 TOLINES_VEI_LONGITUDE = 10.407
+OSLO_TIMEZONE = ZoneInfo("Europe/Oslo")
 
 
 def _cache_access_token(token: str | None, expires_in: Any):
@@ -76,10 +79,56 @@ def get_period_key(cadence: str) -> str:
     return now.strftime("%Y-%m-%d")
 
 
+def _merge_stored_weather(timeseries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Store forecast steps and prepend today's already-passed hours.
+
+    met.no only returns steps from the current hour onward, so the last
+    forecast we saw for each earlier hour today is kept in the database.
+    """
+    now_utc = datetime.now(timezone.utc)
+    oslo_midnight = datetime.now(OSLO_TIMEZONE).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    day_start = oslo_midnight.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    prune_before = (now_utc - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.executemany(
+        """
+        INSERT INTO weather_timesteps (time_utc, data_json, updated_at)
+        VALUES (?, ?, datetime('now'))
+        ON CONFLICT(time_utc) DO UPDATE SET
+            data_json = excluded.data_json,
+            updated_at = excluded.updated_at
+        """,
+        [(step["time"], json.dumps(step)) for step in timeseries],
+    )
+    cursor.execute(
+        "DELETE FROM weather_timesteps WHERE time_utc < ?", (prune_before,)
+    )
+
+    past_rows = []
+    if timeseries:
+        past_rows = cursor.execute(
+            """
+            SELECT data_json FROM weather_timesteps
+            WHERE time_utc >= ? AND time_utc < ?
+            ORDER BY time_utc
+            """,
+            (day_start, timeseries[0]["time"]),
+        ).fetchall()
+
+    conn.commit()
+    conn.close()
+
+    return [json.loads(row["data_json"]) for row in past_rows] + timeseries
+
+
 @app.get("/api/weather/today")
 async def get_todays_weather():
     url = (
-        "https://api.met.no/weatherapi/locationforecast/2.0/compact"
+        "https://api.met.no/weatherapi/locationforecast/2.0/complete"
         f"?lat={TOLINES_VEI_LATITUDE}&lon={TOLINES_VEI_LONGITUDE}"
     )
 
@@ -96,7 +145,12 @@ async def get_todays_weather():
             detail=f"Could not fetch weather forecast: {error}",
         )
 
-    return response.json()
+    forecast = response.json()
+    properties = forecast.get("properties", {})
+    properties["timeseries"] = _merge_stored_weather(
+        properties.get("timeseries", [])
+    )
+    return forecast
 
 
 class ItemUpdate(BaseModel):
