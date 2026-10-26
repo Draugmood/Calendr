@@ -1,5 +1,5 @@
 import type { WeatherForecastTimeStep } from "@/hooks/useTodaysWeather";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PeriodForecasts from "./PeriodForecasts";
 import WeatherIcon from "./WeatherIcon";
@@ -50,9 +50,48 @@ export default function WeatherDetailsModal({
   timeSteps,
 }: Props) {
   const [dayOffset, setDayOffset] = useState(initialDayOffset);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Move focus into the dialog, make the app behind it inert, and hand focus
+  // back to whatever opened it on close.
+  useEffect(() => {
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const appRoot = document.getElementById("root");
+    if (appRoot) appRoot.inert = true;
+    dialogRef.current?.focus();
+
+    return () => {
+      if (appRoot) appRoot.inert = false;
+      opener?.focus();
+    };
+  }, []);
 
   useEffect(() => {
+    function trapTab(event: KeyboardEvent) {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>("button:not(:disabled)"),
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === dialog)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Tab") trapTab(event);
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowLeft") setDayOffset((d) => Math.max(0, d - 1));
       if (event.key === "ArrowRight") {
@@ -92,12 +131,16 @@ export default function WeatherDetailsModal({
     <div
       className="fixed inset-0 z-50 p-4 flex items-center justify-center bg-black/60"
       onClick={onClose}
+      // Portal events still bubble to the carousel tile; don't let them start a swipe.
+      onPointerDown={(event) => event.stopPropagation()}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={`Værvarsel ${dayLabel.toLowerCase()}`}
-        className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl p-4 md:p-6 w-full max-w-2xl relative max-h-full md:max-h-[90vh] flex flex-col"
+        className="outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl p-4 md:p-6 w-full max-w-2xl relative max-h-full md:max-h-[90vh] flex flex-col"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-2 mb-1">

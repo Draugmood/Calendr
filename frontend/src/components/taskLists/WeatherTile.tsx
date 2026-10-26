@@ -29,6 +29,8 @@ export default function WeatherTile() {
       {hasForecast && (
         <button
           onClick={() => setIsModalOpen(true)}
+          // Keep the carousel tile from capturing the pointer and eating the click.
+          onPointerDown={(event) => event.stopPropagation()}
           className="absolute right-3 top-3 w-8 h-8 rounded-full bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors flex items-center justify-center"
           aria-label="Vis detaljert værvarsel"
           title="Detaljer"
