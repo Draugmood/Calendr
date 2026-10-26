@@ -78,7 +78,7 @@ export default function ChoreFormModal({ chore, onClose, onSubmit }: Props) {
 
         <div className="flex flex-col gap-2">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Minst hver
+            Hvor ofte
           </span>
           <div className="flex flex-wrap gap-2">
             {FREQUENCY_PRESETS.map((preset) => (
@@ -93,6 +93,7 @@ export default function ChoreFormModal({ chore, onClose, onSubmit }: Props) {
             ))}
           </div>
           <label className="flex items-center gap-2 text-sm">
+            Dager mellom hver gang
             <TextInput
               className="w-20 px-2! py-1!"
               layout="numeric"
@@ -102,7 +103,6 @@ export default function ChoreFormModal({ chore, onClose, onSubmit }: Props) {
               }
               onEnter={() => void handleSubmit()}
             />
-            dager
           </label>
         </div>
 

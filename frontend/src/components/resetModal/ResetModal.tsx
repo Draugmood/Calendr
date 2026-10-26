@@ -15,14 +15,14 @@ interface Props {
 export default function ResetModal({ isOpen, onClose }: Props) {
   const checklistItems = [
     "Sette på lading (bil, sykkel, babycall)",
-    "Rydd vekk fra kjøkkenbord",
+    "Rydde vekk fra kjøkkenbordet",
     "Tømme oppvaskkum",
     "Fylle oppvaskmaskin og sette på",
     "Vaske kjøkkenbenk+ komfyr + kjøkkenbord",
     "Vaske av tripptrapp",
-    "Rydd stue- leker til lekekasser, klær til klesskap eller skittentøy",
+    "Rydde stua – leker til lekekasser, klær til klesskap eller skittentøy",
     "Tømme søppel kjøkken",
-    "Sjekk klesvask status",
+    "Sjekke klesvasken",
     "Sjekke søppel bad og vaskerom",
     "Overnight oats",
     "Matpakke",
@@ -64,10 +64,10 @@ export default function ResetModal({ isOpen, onClose }: Props) {
               <span className="material-symbols-outlined text-gray-300">
                 check_box
               </span>
-              Checklist
+              Sjekkliste
             </h2>
             <button className="px-3 py-1.5 text-sm bg-zinc-800 text-gray-300 rounded hover:bg-zinc-700 transition-colors font-medium">
-              Delete
+              Slett
             </button>
           </div>
 

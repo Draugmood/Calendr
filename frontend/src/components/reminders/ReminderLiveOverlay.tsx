@@ -51,13 +51,13 @@ export default function ReminderLiveOverlay() {
                 ) : null}
                 <div className="mt-4 flex flex-wrap gap-2">
                   <SecondaryButton
-                    label="Snooze 5min"
+                    label="Utsett 5 min"
                     onClick={() => {
                       void snoozeReminder(reminder.id, { snooze_minutes: 5 });
                     }}
                   />
                   <SecondaryButton
-                    label="Snooze 10min"
+                    label="Utsett 10 min"
                     onClick={() => {
                       void snoozeReminder(reminder.id, { snooze_minutes: 10 });
                     }}

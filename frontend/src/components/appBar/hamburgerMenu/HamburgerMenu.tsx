@@ -8,8 +8,8 @@ export default function HamburgerMenu() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 w-10 h-10 rounded flex items-center justify-center bg-blue-500 text-white shadow-md hover:bg-blue-600 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-        aria-label={"Toggle hamburger menu"}
-        title={"Menu"}
+        aria-label={"Åpne eller lukk menyen"}
+        title={"Meny"}
       >
         <span className="material-symbols-outlined">menu</span>
       </button>
