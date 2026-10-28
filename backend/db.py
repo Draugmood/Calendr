@@ -150,6 +150,34 @@ def init_db():
             done BOOLEAN NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
+
+        -- AUTOINCREMENT so a deleted location's id (printed in its QR label) is never reused.
+        CREATE TABLE IF NOT EXISTS storage_locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            kind TEXT NOT NULL CHECK(kind IN ('floor', 'room', 'furniture', 'shelf', 'box')),
+            parent_id INTEGER REFERENCES storage_locations(id),
+            notes TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_storage_locations_parent
+            ON storage_locations(parent_id);
+
+        CREATE TABLE IF NOT EXISTS storage_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT,
+            location_id INTEGER NOT NULL REFERENCES storage_locations(id),
+            notes TEXT,
+            search_text TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_storage_items_location
+            ON storage_items(location_id);
     """)
 
     ensure_column(cursor, "reminders", "timezone", "TEXT")
@@ -160,6 +188,10 @@ def init_db():
     ensure_column(cursor, "reminders", "recurrence_rule", "TEXT")
 
     migrate_legacy_recurrence_rows(cursor)
+
+    from storage import seed_storage
+
+    seed_storage(cursor)
 
     cursor.execute("SELECT count(*) as count FROM recurring_lists")
     if cursor.fetchone()["count"] == 0:
