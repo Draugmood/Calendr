@@ -1,5 +1,7 @@
 import os
 import sqlite3
+from contextlib import contextmanager
+from typing import Iterator
 
 
 def get_db_file() -> str:
@@ -10,6 +12,23 @@ def get_db():
     conn = sqlite3.connect(get_db_file())
     conn.row_factory = sqlite3.Row
     return conn
+
+
+@contextmanager
+def write_transaction() -> Iterator[sqlite3.Connection]:
+    """A connection that holds the write lock from its first read until commit, so
+    checks made inside it still hold when the write lands. Commits on success,
+    rolls back on any exception (HTTPException included), and always closes."""
+    conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        yield conn
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def ensure_column(cursor: sqlite3.Cursor, table_name: str, column_name: str, column_sql: str):

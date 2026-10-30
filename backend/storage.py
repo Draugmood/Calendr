@@ -5,7 +5,7 @@ from typing import Any, Iterable, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from db import get_db
+from db import get_db, write_transaction
 
 router = APIRouter()
 
@@ -135,9 +135,10 @@ def validate_kind(value: str) -> str:
 
 
 def natural_key(value: str) -> list[Any]:
-    # "Hylle 2" before "Hylle 10".
+    # "Hylle 2" before "Hylle 10". isdecimal, not isdigit: it matches exactly what \d
+    # splits out and int() accepts, so a name like "2²" can't crash the sort.
     return [
-        int(part) if part.isdigit() else part.casefold()
+        int(part) if part.isdecimal() else part.casefold()
         for part in re.split(r"(\d+)", value)
     ]
 
@@ -340,33 +341,31 @@ def get_location(location_id: int):
     }
 
 
+# Every write below validates inside write_transaction, so with foreign keys off a
+# concurrent request can't delete or move a location between the check and the write.
 @router.post("/api/storage/locations")
 def create_location(payload: LocationCreate):
     name = normalize_name(payload.name)
     kind = validate_kind(payload.kind)
     notes = normalize_optional_text(payload.notes)
 
-    conn = get_db()
-    cursor = conn.cursor()
-    validate_parent(load_location_index(conn), kind, payload.parent_id)
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        validate_parent(load_location_index(conn), kind, payload.parent_id)
 
-    cursor.execute(
-        """
-        INSERT INTO storage_locations (name, kind, parent_id, notes, sort_order)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (name, kind, payload.parent_id, notes, payload.sort_order),
-    )
-    location_id = cursor.lastrowid
-    if location_id is None:
-        conn.close()
-        raise HTTPException(
-            status_code=500, detail="Failed to create location")
-    conn.commit()
+        cursor.execute(
+            """
+            INSERT INTO storage_locations (name, kind, parent_id, notes, sort_order)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (name, kind, payload.parent_id, notes, payload.sort_order),
+        )
+        location_id = cursor.lastrowid
+        if location_id is None:
+            raise HTTPException(
+                status_code=500, detail="Failed to create location")
 
-    created = load_location_index(conn)[location_id]
-    conn.close()
-    return created
+        return load_location_index(conn)[location_id]
 
 
 @router.patch("/api/storage/locations/{location_id}")
@@ -379,57 +378,49 @@ def update_location(location_id: int, payload: LocationUpdate):
     if payload.sort_order is not None:
         updates["sort_order"] = payload.sort_order
 
-    conn = get_db()
-    cursor = conn.cursor()
-    index = load_location_index(conn)
-    location = get_indexed_location(index, location_id)
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        index = load_location_index(conn)
+        location = get_indexed_location(index, location_id)
 
-    if payload.parent_id is not None and payload.parent_id != location["parent_id"]:
-        if location["is_inbox"]:
-            raise HTTPException(
-                status_code=422, detail="the inbox cannot be moved")
-        validate_parent(index, location["kind"],
-                        payload.parent_id, moving_id=location_id)
-        updates["parent_id"] = payload.parent_id
+        if payload.parent_id is not None and payload.parent_id != location["parent_id"]:
+            if location["is_inbox"]:
+                raise HTTPException(
+                    status_code=422, detail="the inbox cannot be moved")
+            validate_parent(index, location["kind"],
+                            payload.parent_id, moving_id=location_id)
+            updates["parent_id"] = payload.parent_id
 
-    if updates:
-        assignments = ", ".join(f"{column} = ?" for column in updates)
-        cursor.execute(
-            f"UPDATE storage_locations SET {assignments} WHERE id = ?",
-            (*updates.values(), location_id),
-        )
-        conn.commit()
+        if updates:
+            assignments = ", ".join(f"{column} = ?" for column in updates)
+            cursor.execute(
+                f"UPDATE storage_locations SET {assignments} WHERE id = ?",
+                (*updates.values(), location_id),
+            )
 
-    updated = load_location_index(conn)[location_id]
-    conn.close()
-    return updated
+        return load_location_index(conn)[location_id]
 
 
 @router.delete("/api/storage/locations/{location_id}")
 def delete_location(location_id: int):
-    conn = get_db()
-    cursor = conn.cursor()
-    location = get_indexed_location(load_location_index(conn), location_id)
+    with write_transaction() as conn:
+        location = get_indexed_location(load_location_index(conn), location_id)
 
-    if location["is_inbox"]:
-        conn.close()
-        raise HTTPException(
-            status_code=409, detail="The inbox cannot be deleted")
-    if location["child_count"] or location["item_count"]:
-        conn.close()
-        # Counts rather than prose, so the frontend can word the message itself.
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "message": "Location is not empty",
-                "child_count": location["child_count"],
-                "item_count": location["item_count"],
-            },
-        )
+        if location["is_inbox"]:
+            raise HTTPException(
+                status_code=409, detail="The inbox cannot be deleted")
+        if location["child_count"] or location["item_count"]:
+            # Counts rather than prose, so the frontend can word the message itself.
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "Location is not empty",
+                    "child_count": location["child_count"],
+                    "item_count": location["item_count"],
+                },
+            )
 
-    cursor.execute("DELETE FROM storage_locations WHERE id = ?", (location_id,))
-    conn.commit()
-    conn.close()
+        conn.execute("DELETE FROM storage_locations WHERE id = ?", (location_id,))
     return {"success": True, "id": location_id}
 
 
@@ -456,113 +447,99 @@ def create_item(payload: ItemCreate):
     category = normalize_optional_text(payload.category)
     notes = normalize_optional_text(payload.notes)
 
-    conn = get_db()
-    cursor = conn.cursor()
-    ensure_location_exists(cursor, payload.location_id)
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        ensure_location_exists(cursor, payload.location_id)
 
-    cursor.execute(
-        """
-        INSERT INTO storage_items (name, category, location_id, notes, search_text)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (name, category, payload.location_id, notes,
-         build_search_text(name, category, notes)),
-    )
-    item_id = cursor.lastrowid
-    if item_id is None:
-        conn.close()
-        raise HTTPException(status_code=500, detail="Failed to create item")
-    conn.commit()
+        cursor.execute(
+            """
+            INSERT INTO storage_items (name, category, location_id, notes, search_text)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (name, category, payload.location_id, notes,
+             build_search_text(name, category, notes)),
+        )
+        item_id = cursor.lastrowid
+        if item_id is None:
+            raise HTTPException(status_code=500, detail="Failed to create item")
 
-    created = get_item_by_id(cursor, item_id)
-    conn.close()
-    return row_to_item(created)
+        return row_to_item(get_item_by_id(cursor, item_id))
 
 
 @router.patch("/api/storage/items/{item_id}")
 def update_item(item_id: int, payload: ItemUpdate):
-    conn = get_db()
-    cursor = conn.cursor()
-    current = get_item_by_id(cursor, item_id)
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        current = get_item_by_id(cursor, item_id)
 
-    # Merge with the stored row so search_text always covers every field.
-    name = normalize_name(
-        payload.name) if payload.name is not None else current["name"]
-    category = (
-        normalize_optional_text(payload.category)
-        if payload.category is not None
-        else current["category"]
-    )
-    notes = (
-        normalize_optional_text(payload.notes)
-        if payload.notes is not None
-        else current["notes"]
-    )
-    location_id = current["location_id"]
-    if payload.location_id is not None:
-        ensure_location_exists(cursor, payload.location_id)
-        location_id = payload.location_id
+        # Merge with the stored row so search_text always covers every field.
+        name = normalize_name(
+            payload.name) if payload.name is not None else current["name"]
+        category = (
+            normalize_optional_text(payload.category)
+            if payload.category is not None
+            else current["category"]
+        )
+        notes = (
+            normalize_optional_text(payload.notes)
+            if payload.notes is not None
+            else current["notes"]
+        )
+        location_id = current["location_id"]
+        if payload.location_id is not None:
+            ensure_location_exists(cursor, payload.location_id)
+            location_id = payload.location_id
 
-    cursor.execute(
-        """
-        UPDATE storage_items
-        SET name = ?, category = ?, notes = ?, location_id = ?, search_text = ?,
-            updated_at = datetime('now')
-        WHERE id = ?
-        """,
-        (name, category, notes, location_id,
-         build_search_text(name, category, notes), item_id),
-    )
-    conn.commit()
+        cursor.execute(
+            """
+            UPDATE storage_items
+            SET name = ?, category = ?, notes = ?, location_id = ?, search_text = ?,
+                updated_at = datetime('now')
+            WHERE id = ?
+            """,
+            (name, category, notes, location_id,
+             build_search_text(name, category, notes), item_id),
+        )
 
-    updated = get_item_by_id(cursor, item_id)
-    conn.close()
-    return row_to_item(updated)
+        return row_to_item(get_item_by_id(cursor, item_id))
 
 
 @router.delete("/api/storage/items/{item_id}")
 def delete_item(item_id: int):
-    conn = get_db()
-    cursor = conn.cursor()
-    get_item_by_id(cursor, item_id)
-
-    cursor.execute("DELETE FROM storage_items WHERE id = ?", (item_id,))
-    conn.commit()
-    conn.close()
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        get_item_by_id(cursor, item_id)
+        cursor.execute("DELETE FROM storage_items WHERE id = ?", (item_id,))
     return {"success": True, "id": item_id}
 
 
 @router.post("/api/storage/items/move")
 def move_items(payload: ItemsMove):
-    conn = get_db()
-    cursor = conn.cursor()
-    item_ids = ensure_items_exist(cursor, payload.item_ids)
-    ensure_location_exists(cursor, payload.location_id)
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        item_ids = ensure_items_exist(cursor, payload.item_ids)
+        ensure_location_exists(cursor, payload.location_id)
 
-    cursor.executemany(
-        """
-        UPDATE storage_items
-        SET location_id = ?, updated_at = datetime('now')
-        WHERE id = ?
-        """,
-        [(payload.location_id, item_id) for item_id in item_ids],
-    )
-    conn.commit()
-    conn.close()
+        cursor.executemany(
+            """
+            UPDATE storage_items
+            SET location_id = ?, updated_at = datetime('now')
+            WHERE id = ?
+            """,
+            [(payload.location_id, item_id) for item_id in item_ids],
+        )
     return {"success": True, "moved": len(item_ids), "location_id": payload.location_id}
 
 
 @router.post("/api/storage/items/delete")
 def delete_items(payload: ItemsDelete):
-    conn = get_db()
-    cursor = conn.cursor()
-    item_ids = ensure_items_exist(cursor, payload.item_ids)
+    with write_transaction() as conn:
+        cursor = conn.cursor()
+        item_ids = ensure_items_exist(cursor, payload.item_ids)
 
-    cursor.executemany(
-        "DELETE FROM storage_items WHERE id = ?", [(item_id,) for item_id in item_ids]
-    )
-    conn.commit()
-    conn.close()
+        cursor.executemany(
+            "DELETE FROM storage_items WHERE id = ?", [(item_id,) for item_id in item_ids]
+        )
     return {"success": True, "deleted": len(item_ids)}
 
 
