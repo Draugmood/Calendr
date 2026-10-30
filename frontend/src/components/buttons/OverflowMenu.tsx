@@ -64,7 +64,9 @@ export default function OverflowMenu({
       return;
     }
     if (event.key === "Tab") {
-      setIsOpen(false);
+      // Not prevented: from ⋮, Tab and Shift+Tab then continue to its neighbours instead
+      // of starting over from the top once the focused item unmounts.
+      closeAndRefocus();
       return;
     }
 
@@ -74,12 +76,13 @@ export default function OverflowMenu({
     if (menuItems.length === 0) return;
     const index = menuItems.indexOf(document.activeElement as HTMLElement);
     const last = menuItems.length - 1;
-    const nextIndex = {
+    const nextIndexByKey: Partial<Record<string, number>> = {
       ArrowDown: index < 0 || index === last ? 0 : index + 1,
       ArrowUp: index <= 0 ? last : index - 1,
       Home: 0,
       End: last,
-    }[event.key];
+    };
+    const nextIndex = nextIndexByKey[event.key];
     if (nextIndex === undefined) return;
     event.preventDefault();
     menuItems[nextIndex].focus();
