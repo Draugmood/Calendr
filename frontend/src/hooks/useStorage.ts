@@ -9,7 +9,7 @@ import type {
   StorageSearchResult,
 } from "@/types/storage";
 import { fetchWithTimeout } from "@/utils/fetchWithTimeout";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_BASE_URL = "/api/storage";
 const LOCATIONS_URL = `${STORAGE_BASE_URL}/locations`;
@@ -93,24 +93,42 @@ export function deleteItems(itemIds: number[]) {
   return sendJson(`${ITEMS_URL}/delete`, "POST", { item_ids: itemIds });
 }
 
+/**
+ * Refreshes overlap (a quick second action, a slow Pi) and can answer out of order.
+ * Each one asks this for a check, and only the newest may update state, so an older
+ * answer can't bring back a deleted item or stale counts.
+ */
+function useLatestRequest() {
+  const latest = useRef(0);
+  return useCallback(() => {
+    const request = ++latest.current;
+    return () => request === latest.current;
+  }, []);
+}
+
 export function useStorageLocations() {
   const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const beginRequest = useLatestRequest();
 
   const refresh = useCallback(async () => {
+    const isLatest = beginRequest();
     try {
       const response = await fetchWithTimeout(LOCATIONS_URL);
-      setLocations(await readJsonOrThrow<StorageLocation[]>(response));
+      const loaded = await readJsonOrThrow<StorageLocation[]>(response);
+      if (!isLatest()) return;
+      setLocations(loaded);
       setErrorMessage(null);
     } catch (error: unknown) {
+      if (!isLatest()) return;
       setErrorMessage(
         error instanceof Error ? error.message : "Could not load locations",
       );
     } finally {
-      setIsLoading(false);
+      if (isLatest()) setIsLoading(false);
     }
-  }, []);
+  }, [beginRequest]);
 
   useEffect(() => {
     void refresh();
@@ -125,14 +143,19 @@ export function useStorageLocation(locationId: number) {
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const beginRequest = useLatestRequest();
 
   const refresh = useCallback(async () => {
+    const isLatest = beginRequest();
     try {
       const response = await fetchWithTimeout(`${LOCATIONS_URL}/${locationId}`);
-      setLocation(await readJsonOrThrow<StorageLocationDetail>(response));
+      const loaded = await readJsonOrThrow<StorageLocationDetail>(response);
+      if (!isLatest()) return;
+      setLocation(loaded);
       setIsNotFound(false);
       setErrorMessage(null);
     } catch (error: unknown) {
+      if (!isLatest()) return;
       if (error instanceof StorageApiError && error.status === 404) {
         setLocation(null);
         setIsNotFound(true);
@@ -142,9 +165,9 @@ export function useStorageLocation(locationId: number) {
         );
       }
     } finally {
-      setIsLoading(false);
+      if (isLatest()) setIsLoading(false);
     }
-  }, [locationId]);
+  }, [beginRequest, locationId]);
 
   useEffect(() => {
     void refresh();
