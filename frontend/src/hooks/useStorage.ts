@@ -84,6 +84,15 @@ export function deleteItem(itemId: number) {
   return sendJson(`${ITEMS_URL}/${itemId}`, "DELETE");
 }
 
+/** Moves every item or none: the backend rejects the whole batch if one is missing. */
+export function moveItems(itemIds: number[], locationId: number) {
+  return sendJson(`${ITEMS_URL}/move`, "POST", { item_ids: itemIds, location_id: locationId });
+}
+
+export function deleteItems(itemIds: number[]) {
+  return sendJson(`${ITEMS_URL}/delete`, "POST", { item_ids: itemIds });
+}
+
 export function useStorageLocations() {
   const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);

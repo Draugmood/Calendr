@@ -3,7 +3,9 @@ import {
   createItem,
   createLocation,
   deleteItem,
+  deleteItems,
   deleteLocation,
+  moveItems,
   updateItem,
   updateLocation,
   useStorageLocation,
@@ -33,6 +35,7 @@ type FormState =
   | { mode: "createItem" }
   | { mode: "editItem"; item: StorageItem }
   | { mode: "moveItem"; item: StorageItem }
+  | { mode: "moveSelected"; itemIds: number[] }
   | { mode: "createLocation" }
   | { mode: "editLocation" }
   | { mode: "moveLocation" };
@@ -93,6 +96,26 @@ function LocationNotFound() {
   );
 }
 
+function ItemDetails({ item }: { item: StorageItem }) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="min-w-0 break-words text-lg font-semibold">{item.name}</span>
+        {item.category && (
+          <span className="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-zinc-700 dark:text-gray-300">
+            {item.category}
+          </span>
+        )}
+      </span>
+      {item.notes && (
+        <span className="break-words text-sm text-gray-500 dark:text-gray-400">
+          {item.notes}
+        </span>
+      )}
+    </span>
+  );
+}
+
 interface ItemRowProps {
   item: StorageItem;
   isHighlighted: boolean;
@@ -114,21 +137,7 @@ function ItemRow({ item, isHighlighted, rowRef, onEdit, onMove, onDelete }: Item
           : "border-gray-600"
       }`}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="min-w-0 break-words text-lg font-semibold">{item.name}</span>
-          {item.category && (
-            <span className="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-zinc-700 dark:text-gray-300">
-              {item.category}
-            </span>
-          )}
-        </div>
-        {item.notes && (
-          <span className="break-words text-sm text-gray-500 dark:text-gray-400">
-            {item.notes}
-          </span>
-        )}
-      </div>
+      <ItemDetails item={item} />
 
       <div className="flex shrink-0 items-center gap-1">
         {isConfirmingDelete ? (
@@ -172,6 +181,41 @@ function ItemRow({ item, isHighlighted, rowRef, onEdit, onMove, onDelete }: Item
   );
 }
 
+interface SelectableItemRowProps {
+  item: StorageItem;
+  isSelected: boolean;
+  onToggle: () => void;
+}
+
+function SelectableItemRow({ item, isSelected, onToggle }: SelectableItemRowProps) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={isSelected}
+        className={`flex w-full items-center gap-1 rounded-lg border p-3 text-left cursor-pointer ${
+          isSelected
+            ? "border-cyan-600 bg-cyan-50 dark:bg-cyan-950/40"
+            : "border-gray-600 hover:bg-gray-100 dark:hover:bg-zinc-700"
+        }`}
+      >
+        {/* Wrapped like the row's icon buttons, so rows keep their height in select mode. */}
+        <span className="shrink-0 p-2 -ml-2">
+          <span
+            className={`material-symbols-outlined ${
+              isSelected ? "text-cyan-600" : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            {isSelected ? "check_box" : "check_box_outline_blank"}
+          </span>
+        </span>
+        <ItemDetails item={item} />
+      </button>
+    </li>
+  );
+}
+
 function ChildRow({ child }: { child: StorageLocation }) {
   return (
     <li>
@@ -211,6 +255,9 @@ function LocationPage({ locationId }: { locationId: number }) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  // null when not selecting; otherwise the ticked item ids.
+  const [selectedIds, setSelectedIds] = useState<Set<number> | null>(null);
+  const [isConfirmingBulkDelete, setIsConfirmingBulkDelete] = useState(false);
   const highlightedRowRef = useRef<HTMLLIElement>(null);
 
   const childrenMap = useMemo(() => buildChildrenMap(locations), [locations]);
@@ -236,6 +283,12 @@ function LocationPage({ locationId }: { locationId: number }) {
   const parentId = location.parent_id;
   const ancestors = location.path.slice(0, -1);
   const canMove = location.kind !== "floor" && !location.is_inbox;
+  const isSelecting = selectedIds !== null;
+  // Only ids still on this page, in case a refresh removed some.
+  const selectedItemIds = location.items
+    .filter((item) => selectedIds?.has(item.id))
+    .map((item) => item.id);
+  const isAllSelected = selectedItemIds.length === location.items.length;
 
   const refreshAll = async () => {
     await Promise.all([refresh(), refreshLocations()]);
@@ -313,6 +366,64 @@ function LocationPage({ locationId }: { locationId: number }) {
     await updateLocation(location.id, { parent_id: target.id });
     setNotice({ text: `«${location.name}» er flyttet til ${formatPath(target.path)}.` });
     await refreshAll();
+  };
+
+  const startSelecting = () => {
+    setNotice(null);
+    setActionError(null);
+    setSelectedIds(new Set());
+  };
+
+  const stopSelecting = () => {
+    setSelectedIds(null);
+    setIsConfirmingBulkDelete(false);
+  };
+
+  const toggleSelected = (itemId: number) => {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (!next.delete(itemId)) next.add(itemId);
+      return next;
+    });
+  };
+
+  const toggleAllSelected = () => {
+    setSelectedIds(new Set(isAllSelected ? [] : location.items.map((item) => item.id)));
+  };
+
+  const handleMoveSelected = async (itemIds: number[], target: StorageLocation) => {
+    await moveItems(itemIds, target.id);
+    setNotice({
+      text: `${itemIds.length} ting er flyttet til ${formatPath(target.path)}.`,
+      linkTo: `/b/${target.id}`,
+    });
+    stopSelecting();
+    await refreshAll();
+  };
+
+  const handleDeleteSelected = async () => {
+    const itemIds = selectedItemIds;
+    setIsConfirmingBulkDelete(false);
+    const isDeleted = await runAction(async () => {
+      await deleteItems(itemIds);
+      await refreshAll();
+    }, "Kunne ikke slette tingene.");
+    if (isDeleted) {
+      stopSelecting();
+      setNotice({ text: `${itemIds.length} ting er slettet.` });
+    }
+  };
+
+  // A place made from the move picker; the picker then moves the things into it.
+  const handleCreatePlace = async (parent: StorageLocation, values: LocationFormValues) => {
+    const created = await createLocation({
+      name: values.name,
+      kind: values.kind,
+      parent_id: parent.id,
+      notes: values.notes || null,
+    });
+    await refreshLocations();
+    return created;
   };
 
   const locationMoveDisabledIds = () => {
@@ -465,25 +576,110 @@ function LocationPage({ locationId }: { locationId: number }) {
 
       {location.items.length > 0 && (
         <div>
-          <h2 className="mb-2 text-lg font-semibold">Ting her</h2>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h2 className="flex-1 text-lg font-semibold">Ting her</h2>
+            {isSelecting ? (
+              <>
+                <button
+                  type="button"
+                  onClick={toggleAllSelected}
+                  className="rounded px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700"
+                >
+                  {isAllSelected ? "Fjern alle" : "Velg alle"}
+                </button>
+                <button
+                  type="button"
+                  onClick={stopSelecting}
+                  className="rounded px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700"
+                >
+                  Avbryt
+                </button>
+              </>
+            ) : (
+              location.items.length > 1 && (
+                <button type="button" onClick={startSelecting} className={ACTION_BUTTON_CLASS}>
+                  <span className="material-symbols-outlined">checklist</span>
+                  Velg
+                </button>
+              )
+            )}
+          </div>
           <ul className="flex flex-col gap-2">
-            {location.items.map((item) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                isHighlighted={item.id === highlightedItemId}
-                rowRef={item.id === highlightedItemId ? highlightedRowRef : undefined}
-                onEdit={() => setFormState({ mode: "editItem", item })}
-                onMove={() => setFormState({ mode: "moveItem", item })}
-                onDelete={() =>
-                  void runAction(async () => {
-                    await deleteItem(item.id);
-                    await refreshAll();
-                  }, "Kunne ikke slette tingen.")
-                }
-              />
-            ))}
+            {location.items.map((item) =>
+              isSelecting ? (
+                <SelectableItemRow
+                  key={item.id}
+                  item={item}
+                  isSelected={selectedIds.has(item.id)}
+                  onToggle={() => toggleSelected(item.id)}
+                />
+              ) : (
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  isHighlighted={item.id === highlightedItemId}
+                  rowRef={item.id === highlightedItemId ? highlightedRowRef : undefined}
+                  onEdit={() => setFormState({ mode: "editItem", item })}
+                  onMove={() => setFormState({ mode: "moveItem", item })}
+                  onDelete={() =>
+                    void runAction(async () => {
+                      await deleteItem(item.id);
+                      await refreshAll();
+                    }, "Kunne ikke slette tingen.")
+                  }
+                />
+              ),
+            )}
           </ul>
+
+          {/* z-40 keeps the bar above the seasonal decorations (z-30) in the corners. */}
+          {isSelecting && (
+            <div className="sticky bottom-2 z-40 mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-cyan-600 bg-white p-2 shadow-lg dark:bg-gray-800">
+              {isConfirmingBulkDelete ? (
+                <>
+                  <span className="flex-1 px-1">Slette {selectedItemIds.length} ting?</span>
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteSelected()}
+                    className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white cursor-pointer hover:bg-red-500"
+                  >
+                    Slett
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingBulkDelete(false)}
+                    className="rounded px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700"
+                  >
+                    Avbryt
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 px-1 text-sm font-medium">
+                    {selectedItemIds.length} valgt
+                  </span>
+                  <button
+                    type="button"
+                    disabled={selectedItemIds.length === 0 || isLoadingLocations}
+                    onClick={() => setFormState({ mode: "moveSelected", itemIds: selectedItemIds })}
+                    className={ACTION_BUTTON_CLASS}
+                  >
+                    <span className="material-symbols-outlined">drive_file_move</span>
+                    Flytt
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedItemIds.length === 0}
+                    onClick={() => setIsConfirmingBulkDelete(true)}
+                    className={ACTION_BUTTON_CLASS}
+                  >
+                    <span className="material-symbols-outlined">delete</span>
+                    Slett
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -516,8 +712,21 @@ function LocationPage({ locationId }: { locationId: number }) {
           locations={locations}
           currentId={formState.item.location_id}
           disabledIds={new Set()}
+          onCreate={handleCreatePlace}
           onClose={() => setFormState({ mode: "closed" })}
           onSubmit={(target) => handleMoveItem(formState.item, target)}
+        />
+      )}
+
+      {formState.mode === "moveSelected" && (
+        <LocationPickerModal
+          title={`Flytt ${formState.itemIds.length} ting`}
+          locations={locations}
+          currentId={location.id}
+          disabledIds={new Set()}
+          onCreate={handleCreatePlace}
+          onClose={() => setFormState({ mode: "closed" })}
+          onSubmit={(target) => handleMoveSelected(formState.itemIds, target)}
         />
       )}
 

@@ -7,6 +7,8 @@ interface Props {
   locations: StorageLocation[];
   // Without it, rows link to the location's page.
   onSelect?: (location: StorageLocation) => void;
+  // Adds a "new place here" button to every row that isn't disabled or the inbox.
+  onCreateChild?: (parent: StorageLocation) => void;
   disabledIds?: Set<number>;
   currentId?: number;
   initialExpandedIds?: Iterable<number>;
@@ -40,6 +42,7 @@ interface RowProps {
   expandedIds: Set<number>;
   onToggle: (id: number) => void;
   onSelect?: (location: StorageLocation) => void;
+  onCreateChild?: (parent: StorageLocation) => void;
   disabledIds?: Set<number>;
   currentId?: number;
 }
@@ -51,6 +54,7 @@ function LocationTreeRow({
   expandedIds,
   onToggle,
   onSelect,
+  onCreateChild,
   disabledIds,
   currentId,
 }: RowProps) {
@@ -119,6 +123,9 @@ function LocationTreeRow({
             {content}
           </Link>
         )}
+        {onCreateChild && !isDisabled && !location.is_inbox && (
+          <NewChildButton parent={location} onCreateChild={onCreateChild} />
+        )}
       </div>
       {isExpanded && children.length > 0 && (
         <ul>
@@ -131,6 +138,7 @@ function LocationTreeRow({
               expandedIds={expandedIds}
               onToggle={onToggle}
               onSelect={onSelect}
+              onCreateChild={onCreateChild}
               disabledIds={disabledIds}
               currentId={currentId}
             />
@@ -141,9 +149,30 @@ function LocationTreeRow({
   );
 }
 
+export function NewChildButton({
+  parent,
+  onCreateChild,
+}: {
+  parent: StorageLocation;
+  onCreateChild: (parent: StorageLocation) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onCreateChild(parent)}
+      className="flex h-11 w-10 shrink-0 items-center justify-center rounded text-gray-500 cursor-pointer hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-zinc-700"
+      aria-label={`Nytt sted i ${parent.name}`}
+      title={`Nytt sted i ${parent.name}`}
+    >
+      <span className="material-symbols-outlined">add</span>
+    </button>
+  );
+}
+
 export default function LocationTree({
   locations,
   onSelect,
+  onCreateChild,
   disabledIds,
   currentId,
   initialExpandedIds,
@@ -172,6 +201,7 @@ export default function LocationTree({
           expandedIds={expandedIds}
           onToggle={handleToggle}
           onSelect={onSelect}
+          onCreateChild={onCreateChild}
           disabledIds={disabledIds}
           currentId={currentId}
         />

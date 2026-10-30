@@ -78,6 +78,15 @@ class ItemUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class ItemsMove(BaseModel):
+    item_ids: list[int]
+    location_id: int
+
+
+class ItemsDelete(BaseModel):
+    item_ids: list[int]
+
+
 def seed_storage(cursor: sqlite3.Cursor):
     cursor.execute("SELECT count(*) AS count FROM storage_locations")
     if cursor.fetchone()["count"] > 0:
@@ -281,6 +290,27 @@ def ensure_location_exists(cursor: sqlite3.Cursor, location_id: int):
     ).fetchone()
     if not row:
         raise HTTPException(status_code=422, detail="location not found")
+
+
+def ensure_items_exist(cursor: sqlite3.Cursor, item_ids: list[int]) -> list[int]:
+    # 404 with the missing ids, so a batch either applies to all items or none.
+    unique_ids = list(dict.fromkeys(item_ids))
+    if not unique_ids:
+        raise HTTPException(status_code=422, detail="item_ids must not be empty")
+    placeholders = ", ".join("?" for _ in unique_ids)
+    found = {
+        row["id"]
+        for row in cursor.execute(
+            f"SELECT id FROM storage_items WHERE id IN ({placeholders})", unique_ids
+        )
+    }
+    missing = [item_id for item_id in unique_ids if item_id not in found]
+    if missing:
+        raise HTTPException(
+            status_code=404,
+            detail={"message": "Items not found", "item_ids": missing},
+        )
+    return unique_ids
 
 
 @router.get("/api/storage/locations")
@@ -500,6 +530,40 @@ def delete_item(item_id: int):
     conn.commit()
     conn.close()
     return {"success": True, "id": item_id}
+
+
+@router.post("/api/storage/items/move")
+def move_items(payload: ItemsMove):
+    conn = get_db()
+    cursor = conn.cursor()
+    item_ids = ensure_items_exist(cursor, payload.item_ids)
+    ensure_location_exists(cursor, payload.location_id)
+
+    cursor.executemany(
+        """
+        UPDATE storage_items
+        SET location_id = ?, updated_at = datetime('now')
+        WHERE id = ?
+        """,
+        [(payload.location_id, item_id) for item_id in item_ids],
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True, "moved": len(item_ids), "location_id": payload.location_id}
+
+
+@router.post("/api/storage/items/delete")
+def delete_items(payload: ItemsDelete):
+    conn = get_db()
+    cursor = conn.cursor()
+    item_ids = ensure_items_exist(cursor, payload.item_ids)
+
+    cursor.executemany(
+        "DELETE FROM storage_items WHERE id = ?", [(item_id,) for item_id in item_ids]
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True, "deleted": len(item_ids)}
 
 
 @router.get("/api/storage/categories")

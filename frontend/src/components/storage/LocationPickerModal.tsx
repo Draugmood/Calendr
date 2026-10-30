@@ -3,7 +3,8 @@ import TextInput from "@/components/input/TextInput";
 import { INBOX_ICON, KIND_ICONS, type StorageLocation } from "@/types/storage";
 import { formatPath } from "@/utils/storageTree";
 import { useState } from "react";
-import LocationTree from "./LocationTree";
+import LocationFormModal, { type LocationFormValues } from "./LocationFormModal";
+import LocationTree, { NewChildButton } from "./LocationTree";
 import StorageModal from "./StorageModal";
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
   // Where the thing sits now; its branch starts expanded.
   currentId: number;
   disabledIds: Set<number>;
+  // When given, each row can create a new place, and the move then goes there.
+  onCreate?: (parent: StorageLocation, values: LocationFormValues) => Promise<StorageLocation>;
   onClose: () => void;
   onSubmit: (target: StorageLocation) => Promise<unknown>;
 }
@@ -21,19 +24,23 @@ export default function LocationPickerModal({
   locations,
   currentId,
   disabledIds,
+  onCreate,
   onClose,
   onSubmit,
 }: Props) {
   const [filter, setFilter] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [createParent, setCreateParent] = useState<StorageLocation | null>(null);
 
   const current = locations.find((location) => location.id === currentId);
-  const expandedIds = current?.path.slice(0, -1).map((entry) => entry.id) ?? [];
+  // Includes the current place itself, so its own shelves and boxes are in view.
+  const expandedIds = current?.path.map((entry) => entry.id) ?? [];
   const query = filter.trim().toLocaleLowerCase("nb");
   const matches = query
     ? locations.filter((location) => location.name.toLocaleLowerCase("nb").includes(query))
     : [];
+  const handleCreateChild = onCreate && !isSaving ? setCreateParent : undefined;
 
   const handleSelect = async (target: StorageLocation) => {
     if (isSaving || disabledIds.has(target.id) || target.id === currentId) return;
@@ -48,6 +55,14 @@ export default function LocationPickerModal({
     }
   };
 
+  const handleCreate = async (parent: StorageLocation, values: LocationFormValues) => {
+    if (!onCreate) return;
+    // A failed create keeps the form open; a failed move after it shows here instead.
+    const created = await onCreate(parent, values);
+    setCreateParent(null);
+    await handleSelect(created);
+  };
+
   return (
     <StorageModal title={title}>
       <TextInput
@@ -56,6 +71,12 @@ export default function LocationPickerModal({
         enterLabel="Ferdig"
         placeholder="Søk etter sted"
       />
+
+      {onCreate && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Finnes ikke stedet ennå? Trykk + for å lage det og flytte hit.
+        </p>
+      )}
 
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
@@ -66,12 +87,12 @@ export default function LocationPickerModal({
               const isDisabled = disabledIds.has(location.id);
               const isCurrent = location.id === currentId;
               return (
-                <li key={location.id}>
+                <li key={location.id} className="flex items-center gap-1">
                   <button
                     type="button"
                     disabled={isDisabled || isCurrent}
                     onClick={() => void handleSelect(location)}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-2 text-left ${
+                    className={`flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-2 text-left ${
                       isDisabled
                         ? "opacity-40"
                         : "cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700"
@@ -96,6 +117,9 @@ export default function LocationPickerModal({
                       )}
                     </span>
                   </button>
+                  {handleCreateChild && !isDisabled && !location.is_inbox && (
+                    <NewChildButton parent={location} onCreateChild={handleCreateChild} />
+                  )}
                 </li>
               );
             })}
@@ -109,6 +133,7 @@ export default function LocationPickerModal({
         <LocationTree
           locations={locations}
           onSelect={(target) => void handleSelect(target)}
+          onCreateChild={handleCreateChild}
           disabledIds={disabledIds}
           currentId={currentId}
           initialExpandedIds={expandedIds}
@@ -118,6 +143,17 @@ export default function LocationPickerModal({
       <div className="flex justify-end gap-3">
         <SecondaryButton label={isSaving ? "Flytter..." : "Avbryt"} onClick={isSaving ? undefined : onClose} />
       </div>
+
+      {createParent && (
+        <LocationFormModal
+          location={null}
+          parent={createParent}
+          locations={locations}
+          submitLabel="Lagre og flytt hit"
+          onClose={() => setCreateParent(null)}
+          onSubmit={(values) => handleCreate(createParent, values)}
+        />
+      )}
     </StorageModal>
   );
 }

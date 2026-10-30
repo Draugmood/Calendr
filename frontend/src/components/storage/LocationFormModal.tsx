@@ -26,6 +26,7 @@ interface Props {
   location: StorageLocation | null;
   parent: StorageLocation | null;
   locations: StorageLocation[];
+  submitLabel?: string;
   onClose: () => void;
   onSubmit: (values: LocationFormValues) => Promise<unknown>;
 }
@@ -39,6 +40,7 @@ export default function LocationFormModal({
   location,
   parent,
   locations,
+  submitLabel = "Lagre",
   onClose,
   onSubmit,
 }: Props) {
@@ -124,7 +126,7 @@ export default function LocationFormModal({
       <div className="flex justify-end gap-3">
         <SecondaryButton label="Avbryt" onClick={onClose} />
         <PrimaryButton
-          label={isSaving ? "Lagrer..." : "Lagre"}
+          label={isSaving ? "Lagrer..." : submitLabel}
           onClick={isSaving ? undefined : () => void handleSubmit()}
         />
       </div>
