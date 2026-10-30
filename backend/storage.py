@@ -1,5 +1,6 @@
 import re
 import sqlite3
+from contextlib import closing
 from typing import Any, Iterable, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -316,21 +317,20 @@ def ensure_items_exist(cursor: sqlite3.Cursor, item_ids: list[int]) -> list[int]
 
 @router.get("/api/storage/locations")
 def list_locations():
-    conn = get_db()
-    index = load_location_index(conn)
-    conn.close()
+    with closing(get_db()) as conn:
+        index = load_location_index(conn)
     return sort_locations(index.values())
 
 
 @router.get("/api/storage/locations/{location_id}")
 def get_location(location_id: int):
-    conn = get_db()
-    index = load_location_index(conn)
-    location = get_indexed_location(index, location_id)
-    items = conn.execute(
-        "SELECT * FROM storage_items WHERE location_id = ?", (location_id,)
-    ).fetchall()
-    conn.close()
+    # closing() so the 404 for a deleted or mistyped QR id still closes the connection.
+    with closing(get_db()) as conn:
+        index = load_location_index(conn)
+        location = get_indexed_location(index, location_id)
+        items = conn.execute(
+            "SELECT * FROM storage_items WHERE location_id = ?", (location_id,)
+        ).fetchall()
 
     children = [child for child in index.values()
                 if child["parent_id"] == location_id]
@@ -426,18 +426,16 @@ def delete_location(location_id: int):
 
 @router.get("/api/storage/items")
 def list_items(location_id: int):
-    conn = get_db()
-    location = conn.execute(
-        "SELECT id FROM storage_locations WHERE id = ?", (location_id,)
-    ).fetchone()
-    if not location:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Location not found")
+    with closing(get_db()) as conn:
+        location = conn.execute(
+            "SELECT id FROM storage_locations WHERE id = ?", (location_id,)
+        ).fetchone()
+        if not location:
+            raise HTTPException(status_code=404, detail="Location not found")
 
-    rows = conn.execute(
-        "SELECT * FROM storage_items WHERE location_id = ?", (location_id,)
-    ).fetchall()
-    conn.close()
+        rows = conn.execute(
+            "SELECT * FROM storage_items WHERE location_id = ?", (location_id,)
+        ).fetchall()
     return sort_items(rows)
 
 
@@ -545,15 +543,14 @@ def delete_items(payload: ItemsDelete):
 
 @router.get("/api/storage/categories")
 def list_categories():
-    conn = get_db()
-    rows = conn.execute(
-        """
-        SELECT DISTINCT category FROM storage_items
-        WHERE category IS NOT NULL
-        ORDER BY category COLLATE NOCASE
-        """
-    ).fetchall()
-    conn.close()
+    with closing(get_db()) as conn:
+        rows = conn.execute(
+            """
+            SELECT DISTINCT category FROM storage_items
+            WHERE category IS NOT NULL
+            ORDER BY category COLLATE NOCASE
+            """
+        ).fetchall()
     return [row["category"] for row in rows]
 
 
@@ -564,26 +561,25 @@ def search_storage(q: str = ""):
     if not query:
         return {"locations": [], "items": []}
 
-    conn = get_db()
-    index = load_location_index(conn)
-    locations = sort_locations(
-        location for location in index.values()
-        if query in location["name"].casefold()
-    )[:SEARCH_LIMIT]
+    with closing(get_db()) as conn:
+        index = load_location_index(conn)
+        locations = sort_locations(
+            location for location in index.values()
+            if query in location["name"].casefold()
+        )[:SEARCH_LIMIT]
 
-    rows = []
-    remaining = SEARCH_LIMIT - len(locations)
-    if remaining > 0:
-        rows = conn.execute(
-            """
-            SELECT * FROM storage_items
-            WHERE search_text LIKE ? ESCAPE '\\'
-            ORDER BY name COLLATE NOCASE, id
-            LIMIT ?
-            """,
-            (f"%{escape_like(query)}%", remaining),
-        ).fetchall()
-    conn.close()
+        rows = []
+        remaining = SEARCH_LIMIT - len(locations)
+        if remaining > 0:
+            rows = conn.execute(
+                """
+                SELECT * FROM storage_items
+                WHERE search_text LIKE ? ESCAPE '\\'
+                ORDER BY name COLLATE NOCASE, id
+                LIMIT ?
+                """,
+                (f"%{escape_like(query)}%", remaining),
+            ).fetchall()
 
     items = [
         {

@@ -124,7 +124,8 @@ export default function LocationFormModal({
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
       <div className="flex justify-end gap-3">
-        <SecondaryButton label="Avbryt" onClick={onClose} />
+        {/* Not while saving: "Lagre og flytt hit" would still move the things afterwards. */}
+        <SecondaryButton label="Avbryt" onClick={isSaving ? undefined : onClose} />
         <PrimaryButton
           label={isSaving ? "Lagrer..." : submitLabel}
           onClick={isSaving ? undefined : () => void handleSubmit()}

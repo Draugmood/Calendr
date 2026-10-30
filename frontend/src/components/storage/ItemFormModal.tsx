@@ -127,7 +127,11 @@ export default function ItemFormModal({ item, locationName, onClose, onSubmit }:
       {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <SecondaryButton label={savedName ? "Ferdig" : "Avbryt"} onClick={onClose} />
+        {/* Not while saving: the pending save would close whatever form is open by then. */}
+        <SecondaryButton
+          label={savedName ? "Ferdig" : "Avbryt"}
+          onClick={isSaving ? undefined : onClose}
+        />
         {!item && (
           <SecondaryButton
             label="Lagre og ny"
