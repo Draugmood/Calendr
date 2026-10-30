@@ -1,5 +1,7 @@
 import os
 import sqlite3
+from contextlib import contextmanager
+from typing import Iterator
 
 
 def get_db_file() -> str:
@@ -10,6 +12,23 @@ def get_db():
     conn = sqlite3.connect(get_db_file())
     conn.row_factory = sqlite3.Row
     return conn
+
+
+@contextmanager
+def write_transaction() -> Iterator[sqlite3.Connection]:
+    """A connection that holds the write lock from its first read until commit, so
+    checks made inside it still hold when the write lands. Commits on success,
+    rolls back on any exception (HTTPException included), and always closes."""
+    conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        yield conn
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def ensure_column(cursor: sqlite3.Cursor, table_name: str, column_name: str, column_sql: str):
@@ -150,6 +169,34 @@ def init_db():
             done BOOLEAN NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
+
+        -- AUTOINCREMENT so a deleted location's id (printed in its QR label) is never reused.
+        CREATE TABLE IF NOT EXISTS storage_locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            kind TEXT NOT NULL CHECK(kind IN ('floor', 'room', 'furniture', 'shelf', 'box')),
+            parent_id INTEGER REFERENCES storage_locations(id),
+            notes TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_storage_locations_parent
+            ON storage_locations(parent_id);
+
+        CREATE TABLE IF NOT EXISTS storage_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT,
+            location_id INTEGER NOT NULL REFERENCES storage_locations(id),
+            notes TEXT,
+            search_text TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_storage_items_location
+            ON storage_items(location_id);
     """)
 
     ensure_column(cursor, "reminders", "timezone", "TEXT")
@@ -160,6 +207,10 @@ def init_db():
     ensure_column(cursor, "reminders", "recurrence_rule", "TEXT")
 
     migrate_legacy_recurrence_rows(cursor)
+
+    from storage import seed_storage
+
+    seed_storage(cursor)
 
     cursor.execute("SELECT count(*) as count FROM recurring_lists")
     if cursor.fetchone()["count"] == 0:

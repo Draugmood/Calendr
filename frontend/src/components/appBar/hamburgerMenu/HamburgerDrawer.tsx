@@ -2,6 +2,7 @@ import ChoresButton from "@/components/chores/ChoresButton";
 import MorningRoutineButton from "@/components/morningRoutine/MorningRoutineButton";
 import RemindersButton from "@/components/reminders/RemindersButton";
 import ResetButton from "@/components/resetModal/ResetButton";
+import StorageButton from "@/components/storage/StorageButton";
 import SuggestionsButton from "@/components/suggestions/SuggestionsButton";
 import { APP_BAR_HEIGHT } from "@/config/layout";
 import { createPortal } from "react-dom";
@@ -45,6 +46,7 @@ export default function HamburgerDrawer({ isOpen, onClose }: Props) {
           <ChoresButton onDrawerClose={onClose} />
           <RemindersButton onDrawerClose={onClose} />
           <SuggestionsButton onDrawerClose={onClose} />
+          <StorageButton onDrawerClose={onClose} />
         </div>
       </div>
     </>,
