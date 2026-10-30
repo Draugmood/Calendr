@@ -22,6 +22,7 @@ import {
 import { buildChildrenMap, canContain, formatPath, getDescendantIds } from "@/utils/storageTree";
 import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import OverflowMenu, { type OverflowMenuItem } from "@/components/buttons/OverflowMenu";
 import ItemFormModal, { type ItemFormValues } from "./ItemFormModal";
 import LocationFormModal, { type LocationFormValues } from "./LocationFormModal";
 import LocationPickerModal from "./LocationPickerModal";
@@ -426,6 +427,26 @@ function LocationPage({ locationId }: { locationId: number }) {
     return created;
   };
 
+  const placeMenuItems: OverflowMenuItem[] = [
+    { label: "Endre", icon: "edit", onSelect: () => setFormState({ mode: "editLocation" }) },
+  ];
+  if (canMove) {
+    placeMenuItems.push({
+      label: "Flytt",
+      icon: "drive_file_move",
+      disabled: isLoadingLocations,
+      onSelect: () => setFormState({ mode: "moveLocation" }),
+    });
+  }
+  if (!location.is_inbox) {
+    placeMenuItems.push({
+      label: "Slett",
+      icon: "delete",
+      isDanger: true,
+      onSelect: () => setIsConfirmingDelete(true),
+    });
+  }
+
   const locationMoveDisabledIds = () => {
     const disabled = getDescendantIds(childrenMap, location.id);
     for (const candidate of locations) {
@@ -518,35 +539,15 @@ function LocationPage({ locationId }: { locationId: number }) {
                 Sted
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setFormState({ mode: "editLocation" })}
-              className={ACTION_BUTTON_CLASS}
-            >
-              <span className="material-symbols-outlined">edit</span>
-              Endre
-            </button>
-            {canMove && (
-              <button
-                type="button"
-                disabled={isLoadingLocations}
-                onClick={() => setFormState({ mode: "moveLocation" })}
-                className={ACTION_BUTTON_CLASS}
-              >
-                <span className="material-symbols-outlined">drive_file_move</span>
-                Flytt
-              </button>
-            )}
-            {!location.is_inbox && (
-              <button
-                type="button"
-                onClick={() => setIsConfirmingDelete(true)}
-                className={ACTION_BUTTON_CLASS}
-              >
-                <span className="material-symbols-outlined">delete</span>
-                Slett
-              </button>
-            )}
+            {/* The place's own actions are needed less often, so they share a menu and
+                the row fits on one line on a phone. */}
+            <div className="ml-auto">
+              <OverflowMenu
+                label={`Flere valg for «${location.name}»`}
+                triggerClassName={ACTION_BUTTON_CLASS}
+                items={placeMenuItems}
+              />
+            </div>
           </div>
         )}
 
