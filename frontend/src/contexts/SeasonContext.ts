@@ -1,7 +1,7 @@
 import { createContext, createElement, useContext, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import React from "react";
-import { activeSeason, seasonById, type Season } from "@/config/seasons";
+import { activeSeason, seasonById, type Season, type SeasonId } from "@/config/seasons";
 
 // The kiosk never reloads, so re-check the date now and then to roll over at midnight.
 const RECHECK_MS = 5 * 60 * 1000;
@@ -25,7 +25,14 @@ function resolveSeason(override: string | null): Season | undefined {
   return seasonById(override) ?? activeSeason();
 }
 
-const SeasonContext = createContext<Season | undefined>(undefined);
+interface SeasonState {
+  // Today's season, also while it's switched off.
+  season: Season | undefined;
+  enabled: boolean;
+  toggle: () => void;
+}
+
+const SeasonContext = createContext<SeasonState>({ season: undefined, enabled: false, toggle: () => {} });
 
 export function SeasonProvider({ children }: { children: React.ReactNode }) {
   const { search } = useLocation();
@@ -42,15 +49,27 @@ export function SeasonProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(timer);
   }, [override]);
 
+  // Switching a season off lasts until the next season starts (or the page reloads).
+  const [offFor, setOffFor] = useState<SeasonId | null>(null);
+  if (offFor && offFor !== season?.id) setOffFor(null);
+  const enabled = !!season && season.id !== offFor;
+  const toggle = () => setOffFor(offFor ? null : (season?.id ?? null));
+
   useEffect(() => {
     const root = document.documentElement;
-    if (season) root.dataset.season = season.id;
+    if (season && enabled) root.dataset.season = season.id;
     else delete root.dataset.season;
-  }, [season]);
+  }, [season, enabled]);
 
-  return createElement(SeasonContext.Provider, { value: season }, children);
+  return createElement(SeasonContext.Provider, { value: { season, enabled, toggle } }, children);
 }
 
+// The season to decorate for, or undefined when there is none or it's switched off.
 export function useSeason() {
+  const { season, enabled } = useContext(SeasonContext);
+  return enabled ? season : undefined;
+}
+
+export function useSeasonToggle() {
   return useContext(SeasonContext);
 }
