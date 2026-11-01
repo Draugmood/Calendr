@@ -52,6 +52,10 @@ function ItemHit({ item }: { item: StorageSearchItem }) {
             </span>
           )}
         </span>
+        {/* Darker than the path below it, so "Str. 92" isn't mistaken for part of the place. */}
+        {item.notes && (
+          <span className="break-words text-sm text-gray-700 dark:text-gray-300">{item.notes}</span>
+        )}
         <span className="break-words text-sm text-gray-500 dark:text-gray-400">
           {formatPath(item.path)}
         </span>
