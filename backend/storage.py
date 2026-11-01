@@ -270,11 +270,19 @@ def row_to_item(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
-def sort_items(rows: Iterable[sqlite3.Row]) -> list[dict[str, Any]]:
-    return sorted(
-        (row_to_item(row) for row in rows),
-        key=lambda item: (natural_key(item["name"]), item["id"]),
+def item_sort_key(item: sqlite3.Row | dict[str, Any]) -> tuple[Any, ...]:
+    # Same-name items go by category, then note, so "Str 92" comes before "Str 104"
+    # whatever order they were added in. Items without a category or note come first.
+    return (
+        natural_key(item["name"]),
+        natural_key(item["category"] or ""),
+        natural_key(item["notes"] or ""),
+        item["id"],
     )
+
+
+def sort_items(rows: Iterable[sqlite3.Row]) -> list[dict[str, Any]]:
+    return sorted((row_to_item(row) for row in rows), key=item_sort_key)
 
 
 def get_item_by_id(cursor: sqlite3.Cursor, item_id: int) -> sqlite3.Row:
@@ -581,11 +589,12 @@ def search_storage(q: str = ""):
                 (f"%{escape_like(query)}%", remaining),
             ).fetchall()
 
+    # SQL picks which items fit under the limit; this puts them in the same order as a place.
     items = [
         {
             **row_to_item(row),
             "path": index[row["location_id"]]["path"] if row["location_id"] in index else [],
         }
-        for row in rows
+        for row in sorted(rows, key=item_sort_key)
     ]
     return {"locations": locations, "items": items}
